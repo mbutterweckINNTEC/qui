@@ -151,16 +151,696 @@ int cube_i[] = {
 	4, 0, 1
 };
 
-#define QUI_CRCL_N 64 
-#define QUI_CRSS_N 8
-#define QUI_VCTR_N 2 //4 
-float qui_vrtx[(QUI_CRCL_N + QUI_CRSS_N + QUI_VCTR_N) * 8];
+static float3_t rnbw(float t) {
+	int s = t;
+	int r = t - s;
+	switch(s) {
+	case 0: return (float3_t) { 1.f, r, 0.f };
+	case 1: return (float3_t) { 1.f - r, 1.f, 0.f };
+	case 2: return (float3_t) { 0.f, 1.f, r };
+	case 3: return (float3_t) { 0.f, 1.f - r, 1.f };
+	case 4: return (float3_t) { r, 1.f, 0.f };
+	case 5: return (float3_t) { 1.f, 0.f, 1.f - r };
+	};
+
+	return (float3_t) { 0.f, 0.f, 0.f };
+}
+
+struct qui_shdr {
+	int po;
+
+	/* uniform locations */
+	int M;
+};
+
+int qui_shdr_mk(struct qui_shdr *qs) {
+	if (!qs)
+		return -1;
+
+	qs->po = shdr_mk(qui_vsh, qui_fsh);
+
+	if (!qs->po)
+		return -1;
+
+	qs->M = glGetUniformLocation(qs->po, "M");
+
+	if (qs->M == -1)
+		return -1;
+
+	return 0;
+}
+
+enum {
+	QUI_IN_LMB = 0x1,
+	QUI_IN_X = 0x2,
+	QUI_IN_Y = 0x4,
+	QUI_IN_Z = 0x8,
+	QUI_IN_0 = 0x10,
+	QUI_IN_1 = 0x20,
+	QUI_IN_2 = 0x40,
+	QUI_IN_3 = 0x80,
+	QUI_IN_4 = 0x100,
+	QUI_IN_5 = 0x200,
+	QUI_IN_6 = 0x400,
+	QUI_IN_7 = 0x800,
+	QUI_IN_8 = 0x1000,
+	QUI_IN_9 = 0x2000,
+	QUI_IN_DOT = 0x4000,
+	QUI_IN_MINUS = 0x8000,
+	QUI_IN_ESC = 0x10000,
+
+	QUI_IN_ALL = ~0
+};
+
+struct qui_in {
+	int prss;
+	int rls;
+
+	float2_t p;
+	float2_t d;
+
+	float s;
+};
+
+static int qui_in_prss(struct qui_in *qi, int bttn);
+static int qui_in_rls(struct qui_in *qin, int bttn);
+static int qui_in_mv(struct qui_in *qi, float2_t p);
+static int qui_in_scrll(struct qui_in *qi, float scrll);
+static int qui_in_nxt(struct qui_in *qi);
+
+static int qui_in_prss(struct qui_in *qi, int bttn) {
+	if (!qi)
+		return -1;
+
+	qi->prss |= bttn;
+	qi->rls &=~ bttn;
+
+	return 0;
+}
+
+static int qui_in_rls(struct qui_in *qi, int bttn) {
+	if (!qi)
+		return -1;
+
+	qi->rls |= qi->prss & bttn;
+	qi->prss &=~ bttn;
+
+	return 0;
+}
+
+static int qui_in_mv(struct qui_in *qi, float2_t p) {
+	if (!qi)
+		return -1;
+
+	qi->d = add_float2(qi->d, sub_float2(p, qi->p));
+	qi->p = p;
+
+	return 0;
+}
+
+static int qui_in_scrll(struct qui_in *qi, float scrll) {
+	if (!qi)
+		return -1;
+
+	qi->s += scrll;
+
+	return 0;
+}
+
+static int qui_in_nxt(struct qui_in *qi) {
+	if (!qi)
+		return -1;
+
+	qi->rls = 0;
+	qi->d = (float2_t){ 0.f, 0.f };
+	qi->s = 0.f;
+
+	return 0;
+}
+
+#define QUI_MAN_AXIS_X_N 2
+#define QUI_MAN_CRCL_X_N 360
+#define QUI_MAN_AXIS_Y_N 2
+#define QUI_MAN_CRCL_Y_N 360
+#define QUI_MAN_AXIS_Z_N 2
+#define QUI_MAN_CRCL_Z_N 360
+#define QUI_MAN_AXIS_V_N 2
+#define QUI_MAN_CRCL_V_N 360
+
+#define QUI_MAN_PLN_X_N (QUI_MAN_AXIS_X_N + QUI_MAN_CRCL_X_N)
+#define QUI_MAN_PLN_Y_N (QUI_MAN_AXIS_Y_N + QUI_MAN_CRCL_Y_N)
+#define QUI_MAN_PLN_Z_N (QUI_MAN_AXIS_Z_N + QUI_MAN_CRCL_Z_N)
+#define QUI_MAN_PLN_V_N (QUI_MAN_AXIS_Z_N + QUI_MAN_CRCL_Z_N)
+
+#define QUI_MAN_RSZ_N 12
+
+#define QUI_MAN_ALL_N (QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_PLN_V_N + QUI_MAN_RSZ_N)
+
+#define QUI_MAN_ATTR_N 2
+#define QUI_MAN_SZ (QUI_MAN_ALL_N * QUI_MAN_ATTR_N * sizeof(float3_t))
+
+#define QUI_MAN_X_CLR (float3_t) { 1.0f, 0.5f, 0.5f };
+#define QUI_MAN_Y_CLR (float3_t) { 0.5f, 1.0f, 0.5f };
+#define QUI_MAN_Z_CLR (float3_t) { 0.5f, 0.5f, 1.0f };
+#define QUI_MAN_V_CLR (float3_t) { 1.0f, 0.75f, 0.5f };	/* view axis */
+#define QUI_MAN_S_CLR (float3_t) { 0.5f, 0.75f, 1.0f };	/* resize frame */
+
+#define QUI_MAN_R_XYZ 0.875f
+#define QUI_MAN_R_V 1.f
+#define QUI_MAN_L_XYZ 0.75f
+
+#define QUI_MAN_S_XY 0.875f
+#define QUI_MAN_S_DXY 0.9375f
+
+#define QUI_MAN_DRW_MX 12
+
+enum {
+	QUI_MAN_STTS_NIL,
+	QUI_MAN_STTS_MOV_X,
+	QUI_MAN_STTS_MOV_Y,
+	QUI_MAN_STTS_MOV_Z,
+	QUI_MAN_STTS_MOV_V,
+	QUI_MAN_STTS_ROT_X,
+	QUI_MAN_STTS_ROT_Y,
+	QUI_MAN_STTS_ROT_Z,
+	QUI_MAN_STTS_ROT_V,
+	QUI_MAN_STTS_SCL_U		/* only uniform scalling */
+};
+
+struct qui_man {
+	int bo, vao;
+
+	int stts;
+	int phi, dphi;
+};
+
+int qui_man_mk(struct qui_man *qm) {
+	if (NULL == qm)
+		return -1;
+
+	memset(qm, 0, sizeof(struct qui_man));
+
+	/* visual objects */
+	glCreateBuffers(1, &qm->bo);
+
+	if (!qm->bo)
+		goto ouch;
+
+	glNamedBufferStorage(qm->bo, QUI_MAN_SZ, NULL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
+
+	float3_t *v = glMapNamedBufferRange(qm->bo, 0, QUI_MAN_SZ, GL_MAP_WRITE_BIT);
+
+	if (!v)
+		goto ouch;
+
+	/* x axis */
+	*v++ = (float3_t) { QUI_MAN_L_XYZ, 0.f, 0.f };
+	*v++ = QUI_MAN_X_CLR;
+	*v++ = (float3_t) { 0.0f, 0.f, 0.f };
+	*v++ = QUI_MAN_X_CLR;
+
+	for (int i = 0; i < QUI_MAN_CRCL_X_N; ++i) {
+		float phi = (float)i / (float)(QUI_MAN_CRCL_X_N - 1) * 2.0 * M_PI;
+		*v++ = (float3_t) { 0.f, QUI_MAN_R_XYZ * cos(phi), QUI_MAN_R_XYZ * sin(phi) };
+		*v++ = QUI_MAN_X_CLR;		
+	}
+
+	/* y axis */
+	*v++ = (float3_t) { 0.0f, QUI_MAN_L_XYZ, 0.f };
+	*v++ = QUI_MAN_Y_CLR;
+	*v++ = (float3_t) { 0.0f, 0.f, 0.f };
+	*v++ = QUI_MAN_Y_CLR;
+
+	for (int i = 0; i < QUI_MAN_CRCL_Y_N; ++i) {
+		float phi = (float)i / (float)(QUI_MAN_CRCL_Y_N - 1) * 2.0 * M_PI;
+		*v++ = (float3_t) { QUI_MAN_R_XYZ * cos(phi), 0.f, QUI_MAN_R_XYZ * sin(phi) };
+		*v++ = QUI_MAN_Y_CLR;		
+	}
+
+	/* z axis */
+	*v++ = (float3_t) { 0.0f, 0.f, QUI_MAN_L_XYZ };
+	*v++ = QUI_MAN_Z_CLR;
+	*v++ = (float3_t) { 0.0f, 0.f, 0.f };
+	*v++ = QUI_MAN_Z_CLR;
+
+	for (int i = 0; i < QUI_MAN_CRCL_Z_N; ++i) {
+		float phi = (float)i / (float)(QUI_MAN_CRCL_Z_N - 1) * 2.0 * M_PI;
+		*v++ = (float3_t) { QUI_MAN_R_XYZ * cos(phi), QUI_MAN_R_XYZ * sin(phi), 0.f };
+		*v++ = QUI_MAN_Z_CLR;		
+	}
+
+	/* view axis */
+	*v++ = (float3_t) { 0.0f, 0.f, QUI_MAN_L_XYZ };
+	*v++ = QUI_MAN_V_CLR;
+	*v++ = (float3_t) { 0.0f, 0.f, 0.f };
+	*v++ = QUI_MAN_V_CLR;
+
+	for (int i = 0; i < QUI_MAN_CRCL_V_N; ++i) {
+		float phi = (float)i / (float)(QUI_MAN_CRCL_V_N - 1) * 2.0 * M_PI;
+		*v++ = (float3_t) { QUI_MAN_R_V * cos(phi), QUI_MAN_R_V * sin(phi), 0.f };
+		*v++ = QUI_MAN_V_CLR;		
+	}
+
+	/* resize frame */
+	*v++ = (float3_t) { QUI_MAN_S_XY, QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { QUI_MAN_S_DXY, QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { QUI_MAN_S_DXY, QUI_MAN_S_XY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+
+	*v++ = (float3_t) { -QUI_MAN_S_XY, QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { -QUI_MAN_S_DXY, QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { -QUI_MAN_S_DXY, QUI_MAN_S_XY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+
+	*v++ = (float3_t) { QUI_MAN_S_XY, -QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { QUI_MAN_S_DXY, -QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { QUI_MAN_S_DXY, -QUI_MAN_S_XY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+
+	*v++ = (float3_t) { -QUI_MAN_S_XY, -QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { -QUI_MAN_S_DXY, -QUI_MAN_S_DXY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+	*v++ = (float3_t) { -QUI_MAN_S_DXY, -QUI_MAN_S_XY, 0.f };
+	*v++ = QUI_MAN_S_CLR;
+
+
+	glUnmapNamedBuffer(qm->bo);
+
+	glGenVertexArrays(1, &qm->vao);
+
+	if (!qm->vao)
+		goto ouch;
+
+	glBindVertexArray(qm->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, qm->bo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 24, 0);
+	glEnableVertexAttribArray(0); 
+	glVertexAttribPointer(1, 3, GL_FLOAT, 0, 24, (char*)12);
+	glEnableVertexAttribArray(1); 
+	glBindVertexArray(0);
+
+	return 0;
+ouch:
+	if (qm->bo)
+		glDeleteBuffers(1, &qm->bo);
+
+	if (qm->vao)
+		glDeleteVertexArrays(1, &qm->vao);
+
+	memset(qm, 0, sizeof(struct qui_man));
+
+	return -1;
+}
+
+enum {
+	QUI_MAN_FLGS_AXIS_X = 0x1,
+	QUI_MAN_FLGS_AXIS_Y = 0x2,
+	QUI_MAN_FLGS_AXIS_Z = 0x4,
+	QUI_MAN_FLGS_AXIS_V = 0x8,
+	QUI_MAN_FLGS_AXIS_XYZV = 0xf,
+
+	QUI_MAN_FLGS_CRCL_X = 0x10,
+	QUI_MAN_FLGS_CRCL_Y = 0x20,
+	QUI_MAN_FLGS_CRCL_Z = 0x40,
+	QUI_MAN_FLGS_CRCL_V = 0x80,
+	QUI_MAN_FLGS_CRCL_XYZV = 0xf0,
+	QUI_MAN_FLGS_AXIS_CRCL = 0xff,
+
+	QUI_MAN_FLGS_PIE_X = 0x100,
+	QUI_MAN_FLGS_PIE_Y = 0x200,
+	QUI_MAN_FLGS_PIE_Z = 0x400,
+	QUI_MAN_FLGS_PIE_V = 0x800,
+	QUI_MAN_FLGS_PIE_ALL = 0xf00,
+
+	QUI_MAN_FLGS_FRM = 0xf000,	/* frame consist of 4 separate draw calls, that's why it spans 4 bits */
+	QUI_MAN_FLGS_AXIS_CRCL_FRM = 0xf0ff,
+
+	QUI_MAN_FLGS_BITS_N = 16
+};
+
+enum {
+	QUI_MAN_OP_END,
+	QUI_MAN_OP_PIE_STRT,
+	QUI_MAN_OP_PIE_ANGL,
+	QUI_MAN_OP_LN_WDTH
+};
+
+#define QUI_MAN_DRW_PASS_N 4
+
+int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t V, int op[], int flgs) {
+	static int const sv_def[] = {
+		/* x axis */ 0,
+		/* y axis */ QUI_MAN_PLN_X_N,
+		/* z axis */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N,
+		/* v axis */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N,
+		/* x crcl */ QUI_MAN_AXIS_X_N,
+		/* y crcl */ QUI_MAN_PLN_X_N + QUI_MAN_AXIS_Y_N,
+		/* z crcl */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_AXIS_Z_N,
+		/* v crcl */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_AXIS_V_N,
+		/* x disc */ QUI_MAN_AXIS_X_N - 1,
+		/* y disc */ QUI_MAN_PLN_X_N + QUI_MAN_AXIS_Y_N - 1,
+		/* z disc */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_AXIS_Z_N - 1,
+		/* v disc */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_AXIS_V_N - 1,
+		/* resize */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_PLN_V_N,
+		/* resize */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_PLN_V_N + 3,
+		/* resize */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_PLN_V_N + 6,
+		/* resize */ QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_PLN_V_N + 9
+	};
+	static int const nv_def[] = {
+		/* x axis */ QUI_MAN_AXIS_X_N,
+		/* y axis */ QUI_MAN_AXIS_Y_N,
+		/* z axis */ QUI_MAN_AXIS_Z_N,
+		/* v axis */ QUI_MAN_AXIS_V_N,
+		/* x crcl */ QUI_MAN_CRCL_X_N,
+		/* y crcl */ QUI_MAN_CRCL_Y_N,
+		/* z crcl */ QUI_MAN_CRCL_Z_N,
+		/* v crcl */ QUI_MAN_CRCL_V_N,
+		/* x disc */ 2,
+		/* y disc */ 2,
+		/* z disc */ 2,
+		/* v disc */ 2,
+		/* resize */ 3,
+		/* resize */ 3,
+		/* resize */ 3,
+		/* resize */ 3,
+	};
+	static int const pass_def[QUI_MAN_DRW_PASS_N] = { 0x0077, 0xf080, 0x0700, 0x0800 };
+
+	int sv[QUI_MAN_DRW_PASS_N][QUI_MAN_DRW_MX];
+	int nv[QUI_MAN_DRW_PASS_N][QUI_MAN_DRW_MX];
+	int iv[QUI_MAN_DRW_PASS_N] = { 0 };
+	int pass = 0, dsc_strt = 0, dsc_angl = 360, lnwdth = 0;
+
+	float44_t M = mul_float44(V, P);
+
+	//float dV = cbrt(det_float33(float33_float44(V)));
+//	float dV = sqrtf(V.m00 * V.m11 - V.m01 * V.m10);
+	float sV = frobenius_float33(float33_float44(V)) / sqrt(3);
+
+	float44_t DP = {
+		sV, 0.f, 0.f, 0.f,
+		0.f, sV, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		0.f, 0.f, 0.f, 1.f
+	};
+
+	DP = mul_float44(DP, P);
+
+	if (!qm || !qs)
+		return -1;
+
+	if (op) {
+		for (int i = 0; op[i]; ++i) {
+			switch (op[i++]) {
+			case QUI_MAN_OP_PIE_STRT: dsc_strt = op[i]; break;
+			case QUI_MAN_OP_PIE_ANGL: dsc_angl = op[i]; break;
+			case QUI_MAN_OP_LN_WDTH: lnwdth = op[i]; break;
+			};
+		}
+	}
+
+	for (int i = 0; i < QUI_MAN_FLGS_BITS_N; ++i) {
+		for (int j = 0; j < QUI_MAN_DRW_PASS_N; ++j) {
+			if (flgs & 1 << i && pass_def[j] & 1 << i) {
+				sv[j][iv[j]] = sv_def[i];
+				nv[j][iv[j]] = nv_def[i];
+				if (QUI_MAN_FLGS_PIE_ALL & 1 << i) {
+					nv[j][iv[j]] += dsc_angl;
+				}
+				iv[j]++;
+				pass |= 1 << j;
+			}
+		}
+	}
+
+	if (0 == pass)
+		return 0;
+
+	//glDisable(GL_DEPTH_TEST);
+	glUseProgram(qs->po);
+	glBindVertexArray(qm->vao);
+
+	if (pass & 3 && lnwdth)
+		glLineWidth(lnwdth);
+
+	if (pass & 1) {
+		glUniformMatrix4fv(qs->M, 1, 0, &M.m[0][0]);
+		glMultiDrawArrays(GL_LINE_STRIP, sv[0], nv[0], iv[0]);
+	}
+
+	if (pass & 2) {
+		glUniformMatrix4fv(qs->M, 1, 0, &DP.m[0][0]);
+		glMultiDrawArrays(GL_LINE_STRIP, sv[1], nv[1], iv[1]);
+	}
+
+	if (pass & 3 && lnwdth)
+		glLineWidth(1);
+
+	if (pass & 4) {
+		if (dsc_strt) {
+			quaternion_t q;
+			if (flgs & QUI_MAN_FLGS_PIE_X)
+				q = axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -dsc_strt * M_PI / 180.0);
+			if (flgs & QUI_MAN_FLGS_PIE_Y)
+				q = axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, dsc_strt * M_PI / 180.0);
+			if (flgs & QUI_MAN_FLGS_PIE_Z)
+				q = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -dsc_strt * M_PI / 180.0);
+
+			M = mul_float44(mul_float44(quaternion_to_rotation_matrix(q), V), P);
+		}
+		glUniformMatrix4fv(qs->M, 1, 0, &M.m[0][0]);
+		glMultiDrawArrays(GL_TRIANGLE_FAN, sv[2], nv[2], iv[2]);
+	}
+
+	if (pass & 8) {
+		if (dsc_strt) {
+			quaternion_t q = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -dsc_strt * M_PI / 180.0);
+			M = mul_float44(quaternion_to_rotation_matrix(q), P);
+		} else {
+			M = P;
+		}
+		glUniformMatrix4fv(qs->M, 1, 0, &M.m[0][0]);
+		glMultiDrawArrays(GL_TRIANGLE_FAN, sv[3], nv[3], iv[3]);
+	}
+
+//	glEnable(GL_DEPTH_TEST);
+
+	return 0;
+}
+
+static inline float ray_pnt_dst(float3_t ro, float3_t rd, float3_t p) {
+	float t = dot_float3(rd, sub_float3(p, ro)) / dot_float3(rd, rd);
+	return length_float3(sub_float3(p, add_float3(ro, scale_float3(rd, t))));
+}
+
+#define QUI_MAN_EPS 0.01
+
+/* todo:@michal: make analytic function? */
+
+static float qui_ray_xcrcl_(float3_t p, float3_t d, int *out) {
+	float3_t v;
+	float l = FLT_MAX, vr, phi;
+	for (int i = 0; i < QUI_MAN_CRCL_X_N; ++i) {
+		phi = (float)i / (float)(QUI_MAN_CRCL_X_N - 1) * 2.0 * M_PI;
+		v = (float3_t) { 0.f, QUI_MAN_R_XYZ * cos(phi), QUI_MAN_R_XYZ * sin(phi) };
+		vr = ray_pnt_dst(p, d, v);
+
+		if (vr < l) {
+			l = vr;
+			*out = i;
+		}
+	}
+	return l;
+}
+
+static float qui_ray_ycrcl_(float3_t p, float3_t d, int *out) {
+	float3_t v;
+	float l = FLT_MAX, vr, phi;
+	for (int i = 0; i < QUI_MAN_CRCL_Y_N; ++i) {
+		phi = (float)i / (float)(QUI_MAN_CRCL_Y_N - 1) * 2.0 * M_PI;
+		v = (float3_t) { QUI_MAN_R_XYZ * cos(phi), 0.f, QUI_MAN_R_XYZ * sin(phi) };
+		vr = ray_pnt_dst(p, d, v);
+
+		if (vr < l) {
+			l = vr;
+			*out = i;
+		}
+	}
+	return l;
+}
+
+static float qui_ray_zcrcl_(float3_t p, float3_t d, int *out) {
+	float3_t v;
+	float l = FLT_MAX, vr, phi;
+	for (int i = 0; i < QUI_MAN_CRCL_Z_N; ++i) {
+		phi = (float)i / (float)(QUI_MAN_CRCL_Z_N - 1) * 2.0 * M_PI;
+		v = (float3_t) { QUI_MAN_R_XYZ * cos(phi), QUI_MAN_R_XYZ * sin(phi), 0.f };
+		vr = ray_pnt_dst(p, d, v);
+
+		if (vr < l) {
+			l = vr;
+			*out = i;
+		}
+	}
+	return l;
+}
+
+static float qui_ray_vcrcl_(float2_t p, int *out) {
+	float2_t v;
+	float l = FLT_MAX, vr, phi;
+	for (int i = 0; i < QUI_MAN_CRCL_V_N; ++i) {
+		phi = (float)i / (float)(QUI_MAN_CRCL_V_N - 1) * 2.0 * M_PI;
+		v = (float2_t) { QUI_MAN_R_V * cos(phi), QUI_MAN_R_V * sin(phi) };
+		vr = length_float2(sub_float2(v, p));	
+
+		if (vr < l) {
+			l = vr;
+			*out = i;
+		}
+	}
+
+	printf ("vl = %f, phi = %d\n", l, *out);
+	return l;
+}
+
+enum {
+	QUI_MAN_NIL,
+	QUI_MAN_MOV,
+	QUI_MAN_ROT,
+	QUI_MAN_SCL
+};
+
+int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_t P, float44_t V, quaternion_t *out) {
+	float44_t PV = (mul_float44(V, P));
+	float detPV = det_float44(PV);
+	float44_t iPV = invert_float44(PV, detPV);
+	float3_t p = float3_float4(cotransform_float44(iPV, (float4_t){ qi->p.x, qi->p.y, 0.f, 1.f }));
+	float3_t d = normal_float3(m_float3(cotransform_float44(iPV, (float4_t){ 0.f, 0.f, 1.f, 0.f })));
+	float2_t pv = (float2_t){ qi->p.x * P.m11 / P.m00, qi->p.y };
+	int op[16], stts = 0;
+
+	/* input handling */
+	if (QUI_MAN_STTS_NIL == qm->stts) {
+		if (qi->rls & QUI_IN_LMB) {
+			float l, nl, scl = frobenius_float33(float33_float44(V))/ sqrt(3.0);
+			int stts = 0, phi = 0, nphi = 0;
+
+			l = qui_ray_xcrcl_(p, d, &phi);
+			stts = QUI_MAN_STTS_ROT_X;
+
+			nl = qui_ray_ycrcl_(p, d, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_Y;
+			}
+
+			nl = qui_ray_zcrcl_(p, d, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_Z;
+			}
+
+			nl = qui_ray_vcrcl_(pv, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_V;
+			}
+
+			if (l * scl < QUI_MAN_EPS) {
+				qm->phi = phi;
+				qm->stts = stts;
+			}
+		}
+	} else {
+		int phi = 0;
+		switch(qm->stts) {
+		case QUI_MAN_STTS_ROT_X:
+			qui_ray_xcrcl_(p, d, &phi);
+			break;
+		case QUI_MAN_STTS_ROT_Y:
+			qui_ray_ycrcl_(p, d, &phi);
+			break;
+		case QUI_MAN_STTS_ROT_Z:
+			qui_ray_zcrcl_(p, d, &phi);
+			break;
+		case QUI_MAN_STTS_ROT_V:
+			qui_ray_vcrcl_(pv, &phi);
+			break;
+		};
+
+		printf("angles %d %d", qm->phi, phi);
+
+		qm->dphi = phi - qm->phi;
+
+		if (qm->dphi < 0)
+			qm->dphi += 360;
+		printf(" %d\n", qm->dphi);
+
+		if (qi->rls & QUI_IN_LMB) {
+			stts = qm->stts;
+			qm->stts = QUI_MAN_STTS_NIL;
+		}
+
+		if (qi->rls & QUI_IN_ESC) {
+			stts = QUI_MAN_STTS_NIL;
+			qm->stts = QUI_MAN_STTS_NIL;
+		}
+	}
+
+	switch(qm->stts) {
+	case QUI_MAN_STTS_NIL:
+		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_CRCL_FRM);
+		break;
+	case QUI_MAN_STTS_ROT_X:
+		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X | QUI_MAN_FLGS_PIE_X);
+		break;
+	case QUI_MAN_STTS_ROT_Y:
+		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y | QUI_MAN_FLGS_PIE_Y);
+		break;
+	case QUI_MAN_STTS_ROT_Z:
+		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z | QUI_MAN_FLGS_PIE_Z);
+		break;
+	case QUI_MAN_STTS_ROT_V:
+		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V | QUI_MAN_FLGS_PIE_V);
+		break;
+	};
+
+	switch(qm->stts | stts) {
+	case QUI_MAN_STTS_NIL:
+		*out = (quaternion_t) { 1.f, 0.f, 0.f, 0.f };
+		break;
+	case QUI_MAN_STTS_ROT_X:
+		*out = axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -qm->dphi * M_PI / 180.0);
+		break;
+	case QUI_MAN_STTS_ROT_Y:
+		*out = axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, qm->dphi * M_PI / 180.0);
+		break;
+	case QUI_MAN_STTS_ROT_Z:
+		*out = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0);
+		break;
+	case QUI_MAN_STTS_ROT_V:
+		*out = axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0);
+		break;
+	};
+
+	return stts;
+}
 
 float qui_scrll;
 float qui_scrll_sgn = 1.f;
 
 void qui_scrll_cb(GLFWwindow *wndw, double x, double y) {
-	qui_scrll = M_PI * y / 32.0;
+	qui_scrll = y;
 }
 
 
@@ -169,16 +849,19 @@ int main(int argc, char *argv[]) {
 	int w = 1024, h = 1024, qui_po, cube_po, cube_bo[2], cube_vao, M_loc_cube, qui_bo, qui_vao, M_loc_qui;
 	float bg[4] = { 170.f/255.f, 170.f/255.f, 170.f/255.f, 0};
 	float44_t M = identity_sc;
+	float44_t Q = identity_sc;
 	float44_t V = identity_sc;
 	float44_t VM = identity_sc;
-	float44_t P = identity_sc;
+	float44_t P = orthographic(1.f, -1.f, 1.f, -1.f, -1.f, 1.f);
 	float44_t PV = identity_sc;
 	float44_t PVM = identity_sc;
-	float44_t Q = identity_sc;
-	float44_t PVQ = identity_sc;
+
 	quaternion_t q = { 1.0 };
 	float angl = 0.0, ar;
 	double cx, cy, cl;
+	struct qui_shdr qs = {};
+	struct qui_in qi = {};
+	struct qui_man qm = {};
 
 	glfwInit();
 
@@ -195,128 +878,10 @@ int main(int argc, char *argv[]) {
 
 	glfwSetScrollCallback(wndw, qui_scrll_cb);
 
-	qui_po = shdr_mk(qui_vsh, qui_fsh);
 	cube_po = shdr_mk(cube_vsh, cube_fsh);
 
-	int j = 0;
-	for (int i = 0; i < QUI_CRCL_N; ++i) {
-		angl = (float)i / (float)(QUI_CRCL_N - 1) * 2.0 * M_PI;
-		qui_vrtx[j++] = cos(angl);
-		qui_vrtx[j++] = sin(angl);
-		qui_vrtx[j++] = 0.0;
-		qui_vrtx[j++] = 1.0;
-
-		float t_ = 2 * (float)i / (float)(QUI_CRCL_N - 1);
-		float t	= 6.f * (t_ - (int)t_);
-		int s = t;
-		int f = t - s;
-		switch(s) {
-		case 0:
-			qui_vrtx[j++] = 1.f;
-			qui_vrtx[j++] = f;
-			qui_vrtx[j++] = 0.f;
-			break;
-		case 1:
-			qui_vrtx[j++] = 1.f - f;
-			qui_vrtx[j++] = 1.f;
-			qui_vrtx[j++] = 0.f;
-			break;
-		case 2:
-			qui_vrtx[j++] = 0.f;
-			qui_vrtx[j++] = 1.f;
-			qui_vrtx[j++] = f;
-			break;
-		case 3:
-			qui_vrtx[j++] = 0.f;
-			qui_vrtx[j++] = 1.f - f;
-			qui_vrtx[j++] = 1.f;
-			break;
-		case 4:
-			qui_vrtx[j++] = f;
-			qui_vrtx[j++] = 1.f;
-			qui_vrtx[j++] = 0.f;
-			break;
-		case 5:
-			qui_vrtx[j++] = 1.f;
-			qui_vrtx[j++] = 0.f;
-			qui_vrtx[j++] = 1.f - f;
-			break;
-		};
-
-		qui_vrtx[j++] = 1.0;
-	}
-
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] =-1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] =-1.f;
-	qui_vrtx[j++] = 0.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
-	qui_vrtx[j++] = 1.f;
+	qui_shdr_mk(&qs);
+	qui_man_mk(&qm);
 
 	glCreateBuffers(2, cube_bo);
 	glNamedBufferStorage(cube_bo[0], sizeof(cube_v), cube_v, 0);
@@ -330,22 +895,9 @@ int main(int argc, char *argv[]) {
 	glVertexAttrib4f(1, 1,1,1,1);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube_bo[1]);
 	glBindVertexArray(0);
-	
-	glCreateBuffers(1, &qui_bo);
-	glNamedBufferStorage(qui_bo, sizeof(qui_vrtx), qui_vrtx, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
-	glGenVertexArrays(1, &qui_vao);
-	glBindVertexArray(qui_vao);
-	glBindBuffer(GL_ARRAY_BUFFER, qui_bo);
-	glVertexAttribPointer(0, 4, GL_FLOAT, 0, 32, 0);
-	glEnableVertexAttribArray(0); 
-	glVertexAttribPointer(1, 4, GL_FLOAT, 0, 32, (char*)16);
-	glEnableVertexAttribArray(1); 
-	glBindVertexArray(0);
 
 	glClearColor(bg[0], bg[1], bg[2], bg[3]);
 	M_loc_cube = glGetUniformLocation(cube_po, "M");
-	M_loc_qui = glGetUniformLocation(qui_po, "M");
-
 
 	glDepthFunc(GL_LESS);
 
@@ -373,13 +925,12 @@ int main(int argc, char *argv[]) {
 			V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), 0, sin(0.03125), 0 }));
 		}
 
-
 		if (glfwGetKey(wndw, GLFW_KEY_KP_ADD) == GLFW_PRESS) {
-			V = mul_float44(V, (float44_t){ 2, 0, 0, 0,    0, 2, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1});
+			V = mul_float44(V, (float44_t){ 2, 0, 0, 0,    0, 2, 0, 0,   0, 0, 2.0, 0,   0, 0, 0, 1});
 		}
 
 		if (glfwGetKey(wndw, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) {
-			V = mul_float44(V, (float44_t){ 0.5, 0, 0, 0,    0, 0.5, 0, 0,   0, 0, 1, 0,   0, 0, 0, 1});
+			V = mul_float44(V, (float44_t){ 0.5, 0, 0, 0,    0, 0.5, 0, 0,   0, 0, 0.5, 0,   0, 0, 0, 1});
 		}
 
 		if (glfwGetKey(wndw, GLFW_KEY_X) == GLFW_PRESS) {
@@ -401,210 +952,57 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (glfwGetMouseButton(wndw, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-			glfwGetCursorPos(wndw, &cx, &cy);
-			float4_t s = { 2.0 * cx / w - 1.0, 1.0 - 2.0 * cy / h, 0.f, 1.f };
-			float detPV = det_float44(PV);
-			float44_t iPV = invert_float44(PV, detPV);
-			float4_t t = cotransform_float44(iPV, s);
-			t.x /= t.w;
-			t.y /= t.w;
-			t.z /= t.w;
-			t.w = 1.f;
-			float lt = length_float3(m_float3(t));
-			//printf("%f, %f, %f\n", t.x, t.y, t.z);
-			if (lt <= 1.0) {
-				q.a = sqrtf(1.f - lt * lt);
-				q.b = t.x; 
-				q.c = t.y;
-				q.d = t.z;
-			printf("%f, %f, %f, %f\n", q.a, q.b, q.c, q.d);
+			qui_in_prss(&qi, QUI_IN_LMB);
+		} else {
+			qui_in_rls(&qi, QUI_IN_LMB);
+		}
+		
+		if (glfwGetKey(wndw, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			qui_in_prss(&qi, QUI_IN_ESC);
+		} else {
+			qui_in_rls(&qi, QUI_IN_ESC);
+		}
 
-				q = norm_quaternion(q);
-
-				float *v = glMapNamedBufferRange(qui_bo, (QUI_CRCL_N + QUI_CRSS_N) * 8 * sizeof(float), QUI_VCTR_N * 8 * sizeof(float), GL_MAP_WRITE_BIT);
-				if (v) {
-					*v++ = 0.f;
-					*v++ = 0.f;
-					*v++ = 0.f;
-					*v++ = 1.f;
-					*v++ = lt; 
-					*v++ = lt;
-					*v++ = lt;
-					*v++ = 1.f;
-
-					*v++ = t.x;
-					*v++ = t.y;
-					*v++ = t.z;
-					*v++ = 1.f;
-					*v++ = lt;
-					*v++ = lt;
-					*v++ = lt;
-					*v++ = 1.f;
-
-					glUnmapNamedBuffer(qui_bo);
-				}
-			}
-
+		{
+			double x = 0.0, y = 0.0;
+			glfwGetCursorPos(wndw, &x, &y);
+			qui_in_mv(&qi, (float2_t){ (x / (double)w * 2.0 - 1.0), 1.0 - 2.0 * y / (double)h });
 		}
 
 		if (qui_scrll) {
-		/*	float oqa = q.a;
-			float3_t t = q.vector;
-
-			if (0.f < length_float3(t)) {
-				printf("X");
-				t = normal_float3(t);
-			} else {
-				printf("Y");
-				float4_t s = { 0.f, 0.f, 1.f, 1.f };
-				float detPV = det_float44(PV);
-				float44_t iPV = invert_float44(PV, detPV);
-				t = normal_float3(m_float3(cotransform_float44(iPV, s)));
-
-				if (qui_scrll < 0.f)
-					qui_scrll_sgn *= -1.f;
-			}
-
-			q = norm_quaternion(mul_quaternion(axis_angle_to_quaternion(t, qui_scrll), q));
-
-			float ql = sqrtf(q.b * q.b + q.c * q.c + q.d * q.d);
-
-			//if (fabs(oqa - q.a) > 1.f) {
-			//	qui_scrll_sgn *= -1.0;
-			//}
-*/
-			float ql = sqrtf(q.b * q.b + q.c * q.c + q.d * q.d);
-
-			if (0.f == ql) {
-				printf("0:");
-				float3_t ot = { q.b, q.c, q.d };
-				float4_t s = { 0.f, 0.f, 1.f, 1.f };
-				float detPV = det_float44(PV);
-				float44_t iPV = invert_float44(PV, detPV);
-				float3_t t = scale_float3(normal_float3(m_float3(cotransform_float44(iPV, s))), qui_scrll);
-
-				q.a = sqrtf(1.f - qui_scrll * qui_scrll);
-				q.b = t.x;
-				q.c = t.y;
-				q.d = t.z;
-			} else {
-				float4_t s = { q.b/ql, q.c/ql, q.d/ql, 0.0 };
-				float3_t t = { 0.f, 0.f, 1.f };
-				qui_scrll *= dot_float3(t, m_float3(cotransform_float44(PV, s))) < 0.f ? -1.f : 1.f;
-				printf("L:");
-				float ka = atan2(ql, q.a);
-				float kb = ka + qui_scrll;
-
-				q.a = cos(kb);
-				q.b *= sin(kb) / ql;
-				q.c *= sin(kb) / ql;
-				q.d *= sin(kb) / ql;
-			}
-			float *v = glMapNamedBufferRange(qui_bo, (QUI_CRCL_N + QUI_CRSS_N) * 8 * sizeof(float), QUI_VCTR_N * 8 * sizeof(float), GL_MAP_WRITE_BIT);
-				if (v) {
-					*v++ = 0.f;
-					*v++ = 0.f;
-					*v++ = 0.f;
-					*v++ = 1.f;
-					*v++ = ql; 
-					*v++ = ql;
-					*v++ = ql;
-					*v++ = 1.f;
-
-					*v++ = q.b;
-					*v++ = q.c;
-					*v++ = q.d;
-					*v++ = 1.f;
-					*v++ = ql;
-					*v++ = ql;
-					*v++ = ql;
-					*v++ = 1.f;
-
-					glUnmapNamedBuffer(qui_bo);
-				}
-
-			printf("qui_scrll %f, qui_scrll_sgn %f\n", qui_scrll, qui_scrll_sgn);
-			printf("q = %f, %f, %f, %f; |qr| = %f, angl = %f\n", q.a, q.b, q.c, q.d, sqrt(q.b*q.b+q.c*q.c+q.d*q.d), atan2(sqrt(q.b*q.b+q.c*q.c+q.d*q.d), q.a));
+			qui_in_scrll(&qi, qui_scrll);
 			qui_scrll = 0.0;
 		}
 
-		M = transpose_float44(quaternion_to_rotation_matrix(q));
-		VM = mul_float44(M, V);
 
 		P.m[0][0] = 1.f / ar;
+	//	P.m[3][2] = 0.5f;	/* adding perspective */
 
 		PV = mul_float44(V, P);
-		PVM = mul_float44(VM, P);
 
-		{
-			float ql = sqrtf(q.b * q.b + q.c * q.c + q.d * q.d);
+		quaternion_t obr;
 
-			if (ql) {
-				float3_t s = { q.b/ql, q.c/ql, q.d/ql }, t;
-				float4_t _t = { 0.0, 0.0, 1.0, 0.0 };
-
-				float detPV = det_float44(PV);
-				float44_t iPV = invert_float44(PV, detPV);
-				_t = transform_float44(iPV, _t);
-
-				t.x = _t.x;
-				t.y = _t.y;
-				t.z = _t.z;
-
-				t = normal_float3(t);
-				float3_t r;
-
-				if (fabs(dot_float3(t, s)) > 0.9999) {
-					t.x = 1.0;
-					t.y = 0.0;
-					t.z = 0.0;
-
-					r.x = 0.0;
-					r.y = 1.0;
-					r.z = 0.0;
-				} else {
-					r = normal_float3(cross_float3(s, t));
-					t = normal_float3(cross_float3(r, s));
-				}
-
-				Q.m00 = t.x;
-				Q.m01 = t.y;
-				Q.m02 = t.z;
-				Q.m10 = r.x;
-				Q.m11 = r.y;
-				Q.m12 = r.z;
-				Q.m20 = s.x;
-				Q.m21 = s.y;
-				Q.m22 = s.z;
-
-			//	printf("Q:\n%f	%f	%f\n%f	%f	%f\n%f	%f	%f\n", Q.m00, Q.m01, Q.m02, Q.m10, Q.m11, Q.m12, Q.m20, Q.m21, Q.m22);
-			}
+		if (qui_man(&qm, &qs, &qi, (P),(V), &obr)) {
+			printf("set\n");
+			M = mul_float44(M, quaternion_to_rotation_matrix(obr));
+			obr = (quaternion_t){ 1.f, 0.f, 0.f, 0.f };
 		}
 
-		PVQ = mul_float44(Q, PV);
+		Q = quaternion_to_rotation_matrix(obr);
+		VM = mul_float44(M, mul_float44(Q, V));
+		PVM = mul_float44(VM, P);
 
 		glEnable(GL_DEPTH_TEST);
 		glUseProgram(cube_po);
 		glUniformMatrix4fv(M_loc_cube, 1, 0, &PVM.m[0][0]);
 		glBindVertexArray(cube_vao);
-		glDrawElements(GL_TRIANGLES, sizeof(cube_i)/ sizeof(int), GL_UNSIGNED_INT, 0);
-		
-//		glDisable(GL_DEPTH_TEST);
-		glUseProgram(qui_po);
-		glUniformMatrix4fv(M_loc_qui, 1, 0, &PVQ.m[0][0]);
-		glBindVertexArray(qui_vao);
+		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 
-		int crcl_n = QUI_CRCL_N * (1.f + atan2(q.a, sqrtf(q.b * q.b + q.c * q.c + q.d * q.d)) / M_PI) * 0.5f;
-
-		glDrawArrays(GL_LINE_STRIP, 0, crcl_n);
-		glDrawArrays(GL_LINES, QUI_CRCL_N, QUI_CRSS_N);
-		glUniformMatrix4fv(M_loc_qui, 1, 0, &PV.m[0][0]);
-		glLineWidth(5);
-
-		glDrawArrays(GL_LINES, QUI_CRCL_N + QUI_CRSS_N, QUI_VCTR_N);
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);
+
+		qui_in_nxt(&qi);
 
 		angl += 0.005;
 	}

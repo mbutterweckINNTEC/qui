@@ -255,6 +255,8 @@ static float2_t m_float2( float3_t const );                               //!< f
 static float3_t m_float3( float4_t const );                               //!< float4 to float3 conversion
 static float4_t m_float4( float3_t const, float const );                  //!< float3 to float4 conversion
 
+static float3_t float3_float4(float4_t const p) { return (float3_t) { p.x / p.w, p.y / p.w, p.z / p.w }; }
+static float33_t float33_float44(float44_t const m) { return (float33_t) { m.m00, m.m01, m.m02, m.m10, m.m11, m.m12, m.m20, m.m21, m.m22 }; }
 
 static bool      equal_float2( float2_t const, float2_t const );
 static bool      lesser_float2( float2_t const, float2_t const);
@@ -502,6 +504,8 @@ static bool      equal_float44          ( float44_t const, float44_t const );
 static float44_t decompose_float44      ( float44_t A );
 static float44_t gram_schmidt_float44   ( float44_t A );
 static float44_t add_float44            ( float44_t const a, float44_t const b);
+
+static float frobenius_float33(float33_t m); /* usefull for retrieving scale from tranformation (divide by sqrt3()) */
 
 /** \brief Compute a basis change matrix.
  *
@@ -2477,6 +2481,13 @@ static bool centered_basis_from_triangle(float3_t const a, float3_t const b, flo
     return true;
 }
 
+static float frobenius_float33( float33_t m) {
+	double f = 0.0;
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			f += m.m[i][j] * m.m[i][j];
 
+	return (float)sqrt(f);
+}
 
 #endif /* __common_mathutils_h */
