@@ -10,91 +10,10 @@
 #include "mathutils.h"
 #include "quaternion.h"
 
-static int shdr_mk(char  const *vshsrc, char  const *fshsrc) {
-        char log[4096];
-        int po = 0, vso = 0, fso = 0, stts = 0;
-
-        vso = glCreateShader(GL_VERTEX_SHADER);
-        if (!vso)
-                goto end;
-
-        glShaderSource(vso, 1, &vshsrc, NULL);
-        glCompileShader(vso);
-
-        fso = glCreateShader(GL_FRAGMENT_SHADER);
-        if (!fso)
-                goto end;
-
-        glShaderSource(fso, 1, (char const * const*)&fshsrc, NULL);
-        glCompileShader(fso);
-
-        glGetShaderiv(vso, GL_COMPILE_STATUS, &stts);
-        if (!stts) {
-                glGetShaderInfoLog(vso, 4096, NULL, log);
-                printf("vsh: %d\n", stts);
-                puts(log);
-                goto end;
-        }
-
-        glGetShaderiv(fso, GL_COMPILE_STATUS, &stts);
-        if (!stts) {
-                glGetShaderInfoLog(fso, 4096, NULL, log);
-                printf("fsh: %d\n", stts);
-                puts(log);
-                goto end;
-        }
-
-        po = glCreateProgram();
-        if (!po)
-                goto end;
-
-        glAttachShader(po, vso);
-        glAttachShader(po, fso);
-        glLinkProgram(po);
-
-        glGetProgramiv(po, GL_LINK_STATUS, &stts);
-        if (!stts) {
-                glGetProgramInfoLog(po, 4096, NULL, log);
-                printf("po: %d\n", stts);
-                puts(log);
-                goto end;
-        }
-
-end:
-        if (!stts || 0 == po) {
-                glDeleteProgram(po);
-                po = 0;
-        }
-
-        if (vso)
-                glDeleteShader(vso);
-
-        if (fso)
-                glDeleteShader(fso);
-
-        return po;
-}
-
-char *qui_vsh =
-	"#version 440"				"\n"
-	"in      vec4 v;"			"\n"
-	"in      vec4 c;"			"\n"
-	"uniform mat4 M;"			"\n"
-	"out     vec4 k;"			"\n"
-	""					"\n"
-	"void main() {"				"\n"
-	"	gl_Position = M * v;"		"\n"
-	"	k = c;"				"\n"
-	"}"					"\n";
-
-char *qui_fsh =
-	"#version 440"				"\n"
-	"in  vec4 k;"				"\n"
-	"out vec4 K;"				"\n"
-	""					"\n"
-	"void main() {"				"\n"
-	"	K = k;"				"\n"
-	"}"					"\n";
+#include "qui_def.h"
+#include "qui_in.h"
+#include "qui_shdr.h"
+#include "qui_util.h"
 
 char *cube_vsh =
 	"#version 440"				"\n"
@@ -150,167 +69,6 @@ int cube_i[] = {
 	0, 2, 3,
 	4, 0, 1
 };
-
-static float3_t rnbw(float t) {
-	int s = t;
-	int r = t - s;
-	switch(s) {
-	case 0: return (float3_t) { 1.f, r, 0.f };
-	case 1: return (float3_t) { 1.f - r, 1.f, 0.f };
-	case 2: return (float3_t) { 0.f, 1.f, r };
-	case 3: return (float3_t) { 0.f, 1.f - r, 1.f };
-	case 4: return (float3_t) { r, 1.f, 0.f };
-	case 5: return (float3_t) { 1.f, 0.f, 1.f - r };
-	};
-
-	return (float3_t) { 0.f, 0.f, 0.f };
-}
-
-struct qui_shdr {
-	int po;
-
-	/* uniform locations */
-	int M;
-};
-
-int qui_shdr_mk(struct qui_shdr *qs) {
-	if (!qs)
-		return -1;
-
-	qs->po = shdr_mk(qui_vsh, qui_fsh);
-
-	if (!qs->po)
-		return -1;
-
-	qs->M = glGetUniformLocation(qs->po, "M");
-
-	if (qs->M == -1)
-		return -1;
-
-	return 0;
-}
-
-enum {
-	QUI_IN_LMB = 0x1,
-	QUI_IN_X = 0x2,
-	QUI_IN_Y = 0x4,
-	QUI_IN_Z = 0x8,
-	QUI_IN_0 = 0x10,
-	QUI_IN_1 = 0x20,
-	QUI_IN_2 = 0x40,
-	QUI_IN_3 = 0x80,
-	QUI_IN_4 = 0x100,
-	QUI_IN_5 = 0x200,
-	QUI_IN_6 = 0x400,
-	QUI_IN_7 = 0x800,
-	QUI_IN_8 = 0x1000,
-	QUI_IN_9 = 0x2000,
-	QUI_IN_DOT = 0x4000,
-	QUI_IN_MINUS = 0x8000,
-	QUI_IN_ESC = 0x10000,
-
-	QUI_IN_ALL = ~0
-};
-
-struct qui_in {
-	int prss;
-	int rls;
-
-	float2_t p;
-	float2_t d;
-
-	float s;
-};
-
-static int qui_in_prss(struct qui_in *qi, int bttn);
-static int qui_in_rls(struct qui_in *qin, int bttn);
-static int qui_in_mv(struct qui_in *qi, float2_t p);
-static int qui_in_scrll(struct qui_in *qi, float scrll);
-static int qui_in_nxt(struct qui_in *qi);
-
-static int qui_in_prss(struct qui_in *qi, int bttn) {
-	if (!qi)
-		return -1;
-
-	qi->prss |= bttn;
-	qi->rls &=~ bttn;
-
-	return 0;
-}
-
-static int qui_in_rls(struct qui_in *qi, int bttn) {
-	if (!qi)
-		return -1;
-
-	qi->rls |= qi->prss & bttn;
-	qi->prss &=~ bttn;
-
-	return 0;
-}
-
-static int qui_in_mv(struct qui_in *qi, float2_t p) {
-	if (!qi)
-		return -1;
-
-	qi->d = add_float2(qi->d, sub_float2(p, qi->p));
-	qi->p = p;
-
-	return 0;
-}
-
-static int qui_in_scrll(struct qui_in *qi, float scrll) {
-	if (!qi)
-		return -1;
-
-	qi->s += scrll;
-
-	return 0;
-}
-
-static int qui_in_nxt(struct qui_in *qi) {
-	if (!qi)
-		return -1;
-
-	qi->rls = 0;
-	qi->d = (float2_t){ 0.f, 0.f };
-	qi->s = 0.f;
-
-	return 0;
-}
-
-#define QUI_MAN_AXIS_X_N 2
-#define QUI_MAN_CRCL_X_N 360
-#define QUI_MAN_AXIS_Y_N 2
-#define QUI_MAN_CRCL_Y_N 360
-#define QUI_MAN_AXIS_Z_N 2
-#define QUI_MAN_CRCL_Z_N 360
-#define QUI_MAN_AXIS_V_N 2
-#define QUI_MAN_CRCL_V_N 360
-
-#define QUI_MAN_PLN_X_N (QUI_MAN_AXIS_X_N + QUI_MAN_CRCL_X_N)
-#define QUI_MAN_PLN_Y_N (QUI_MAN_AXIS_Y_N + QUI_MAN_CRCL_Y_N)
-#define QUI_MAN_PLN_Z_N (QUI_MAN_AXIS_Z_N + QUI_MAN_CRCL_Z_N)
-#define QUI_MAN_PLN_V_N (QUI_MAN_AXIS_Z_N + QUI_MAN_CRCL_Z_N)
-
-#define QUI_MAN_RSZ_N 12
-
-#define QUI_MAN_ALL_N (QUI_MAN_PLN_X_N + QUI_MAN_PLN_Y_N + QUI_MAN_PLN_Z_N + QUI_MAN_PLN_V_N + QUI_MAN_RSZ_N)
-
-#define QUI_MAN_ATTR_N 2
-#define QUI_MAN_SZ (QUI_MAN_ALL_N * QUI_MAN_ATTR_N * sizeof(float3_t))
-
-#define QUI_MAN_X_CLR (float3_t) { 1.0f, 0.5f, 0.5f };
-#define QUI_MAN_Y_CLR (float3_t) { 0.5f, 1.0f, 0.5f };
-#define QUI_MAN_Z_CLR (float3_t) { 0.5f, 0.5f, 1.0f };
-#define QUI_MAN_V_CLR (float3_t) { 1.0f, 0.75f, 0.5f };	/* view axis */
-#define QUI_MAN_S_CLR (float3_t) { 0.5f, 0.75f, 1.0f };	/* resize frame */
-
-#define QUI_MAN_R_XYZ 0.875f
-#define QUI_MAN_R_V 1.f
-#define QUI_MAN_L_XYZ 0.75f
-
-#define QUI_MAN_S_XY 0.875f
-#define QUI_MAN_S_DXY 0.9375f
 
 #define QUI_MAN_DRW_MX 12
 
@@ -641,118 +399,9 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 	return 0;
 }
 
-static inline float ray_pnt_dst(float3_t ro, float3_t rd, float3_t p) {
-	float t = dot_float3(rd, sub_float3(p, ro)) / dot_float3(rd, rd);
-	return length_float3(sub_float3(p, add_float3(ro, scale_float3(rd, t))));
-}
-
 #define QUI_MAN_EPS 0.01
 
-/* todo:@michal: make analytic function? */
-
-static float qui_ray_xcrcl_(float3_t p, float3_t d, int *out) {
-	float3_t v;
-	float l = FLT_MAX, vr, phi;
-	for (int i = 0; i < QUI_MAN_CRCL_X_N; ++i) {
-		phi = (float)i / (float)(QUI_MAN_CRCL_X_N - 1) * 2.0 * M_PI;
-		v = (float3_t) { 0.f, QUI_MAN_R_XYZ * cos(phi), QUI_MAN_R_XYZ * sin(phi) };
-		vr = ray_pnt_dst(p, d, v);
-
-		if (vr < l) {
-			l = vr;
-			*out = i;
-		}
-	}
-	return l;
-}
-
-static float qui_ray_ycrcl_(float3_t p, float3_t d, int *out) {
-	float3_t v;
-	float l = FLT_MAX, vr, phi;
-	for (int i = 0; i < QUI_MAN_CRCL_Y_N; ++i) {
-		phi = (float)i / (float)(QUI_MAN_CRCL_Y_N - 1) * 2.0 * M_PI;
-		v = (float3_t) { QUI_MAN_R_XYZ * cos(phi), 0.f, QUI_MAN_R_XYZ * sin(phi) };
-		vr = ray_pnt_dst(p, d, v);
-
-		if (vr < l) {
-			l = vr;
-			*out = i;
-		}
-	}
-	return l;
-}
-
-static float qui_ray_zcrcl_(float3_t p, float3_t d, int *out) {
-	float3_t v;
-	float l = FLT_MAX, vr, phi;
-	for (int i = 0; i < QUI_MAN_CRCL_Z_N; ++i) {
-		phi = (float)i / (float)(QUI_MAN_CRCL_Z_N - 1) * 2.0 * M_PI;
-		v = (float3_t) { QUI_MAN_R_XYZ * cos(phi), QUI_MAN_R_XYZ * sin(phi), 0.f };
-		vr = ray_pnt_dst(p, d, v);
-
-		if (vr < l) {
-			l = vr;
-			*out = i;
-		}
-	}
-	return l;
-}
-
-static float qui_ray_vcrcl_(float2_t p, int *out) {
-	float2_t v;
-	float l = FLT_MAX, vr, phi;
-	for (int i = 0; i < QUI_MAN_CRCL_V_N; ++i) {
-		phi = (float)i / (float)(QUI_MAN_CRCL_V_N - 1) * 2.0 * M_PI;
-		v = (float2_t) { QUI_MAN_R_V * cos(phi), QUI_MAN_R_V * sin(phi) };
-		vr = length_float2(sub_float2(v, p));	
-
-		if (vr < l) {
-			l = vr;
-			*out = i;
-		}
-	}
-
-	printf ("vl = %f, phi = %d\n", l, *out);
-	return l;
-}
-
-static float qui_ray_crnr_(float2_t p) {
-	static float2_t const P[12] = {
-		{  QUI_MAN_S_DXY,  QUI_MAN_S_DXY },
-		{  QUI_MAN_S_XY,   QUI_MAN_S_DXY },
-		{  QUI_MAN_S_DXY,  QUI_MAN_S_XY  },
-		{ -QUI_MAN_S_DXY,  QUI_MAN_S_DXY },
-		{ -QUI_MAN_S_XY,   QUI_MAN_S_DXY },
-		{ -QUI_MAN_S_DXY,  QUI_MAN_S_XY  },
-		{  QUI_MAN_S_DXY, -QUI_MAN_S_DXY },
-		{  QUI_MAN_S_XY,  -QUI_MAN_S_DXY },
-		{  QUI_MAN_S_DXY, -QUI_MAN_S_XY  },
-		{ -QUI_MAN_S_DXY, -QUI_MAN_S_DXY },
-		{ -QUI_MAN_S_XY,  -QUI_MAN_S_DXY },
-		{ -QUI_MAN_S_DXY, -QUI_MAN_S_XY  }
-	};
-
-	float l = FLT_MAX, l_;
-
-	for (int i = 0; i < 12; ++i) {
-		l_ = length_float2(sub_float2(P[i], p));
-
-		if (l_ < l) {
-			l = l_;
-		}
-	}
-
-	return l;
-}
-
-enum {
-	QUI_MAN_NIL,
-	QUI_MAN_MOV,
-	QUI_MAN_ROT,
-	QUI_MAN_SCL
-};
-
-int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_t P, float44_t V, quaternion_t *out, float *outscl) {
+int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms) {
 	float44_t PV = (mul_float44(V, P));
 	float detPV = det_float44(PV);
 	float44_t iPV = invert_float44(PV, detPV);
@@ -867,23 +516,23 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 
 	switch(qm->stts | stts) {
 	case QUI_MAN_STTS_NIL:
-		*out = (quaternion_t) { 1.f, 0.f, 0.f, 0.f };
+		*mq = (quaternion_t) { 1.f, 0.f, 0.f, 0.f };
 		break;
 	case QUI_MAN_STTS_ROT_X:
-		*out = axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -qm->dphi * M_PI / 180.0);
+		*mq = axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -qm->dphi * M_PI / 180.0);
 		break;
 	case QUI_MAN_STTS_ROT_Y:
-		*out = axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, qm->dphi * M_PI / 180.0);
+		*mq = axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, qm->dphi * M_PI / 180.0);
 		break;
 	case QUI_MAN_STTS_ROT_Z:
-		*out = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0);
+		*mq = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0);
 		break;
 	case QUI_MAN_STTS_ROT_V:
-		*out = axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0);
+		*mq = axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0);
 		break;
 	};
 
-	*outscl = qm->scl;
+	*ms = qm->scl;
 
 	return stts;
 }
@@ -1035,8 +684,9 @@ int main(int argc, char *argv[]) {
 
 		quaternion_t obr;
 		float skl = 1.f;
+		float3_t tr = {0, 0, 0};
 
-		if (qui_man(&qm, &qs, &qi, P, V, &obr, &skl)) {
+		if (qui_man(&qm, &qs, &qi, P, V, &tr, &obr, &skl)) {
 			printf("set\n");
 			S = (float44_t){
 				skl, 0.f, 0.f, 0.f,
