@@ -333,7 +333,11 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 	if (0 == pass)
 		return 0;
 
-	//glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR );
+	glBlendColor(0.75, 0.75, 0.75, 0.75);
+
 	glUseProgram(qs->po);
 	glBindVertexArray(qm->vao);
 
@@ -380,7 +384,7 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 		glMultiDrawArrays(GL_TRIANGLE_FAN, sv[3], nv[3], iv[3]);
 	}
 
-//	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
 
 	return 0;
 }
@@ -408,69 +412,75 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 	int op[16], stts = 0;
 	qm->scl = 1.f;
 	float dlt = qm->dlt;
+	int more = 0;
 
 	/* input handling */
 	if (QUI_MAN_STTS_NIL == qm->stts) {
-		if (qi->rls & QUI_IN_LMB) {
-			float l, nl;
-			int stts = 0, phi = 0, nphi = 0;
+		float l, nl;
+		int stts = 0, phi = 0, nphi = 0;
 
-			l = qui_ray_xcrcl_(p, d, &phi);
-			stts = QUI_MAN_STTS_ROT_X;
+		l = qui_ray_xcrcl_(p, d, &phi);
+		stts = QUI_MAN_STTS_ROT_X;
 
-			nl = qui_ray_ycrcl_(p, d, &nphi);
-			if (nl < l) {
-				l = nl;
-				phi = nphi;
-				stts = QUI_MAN_STTS_ROT_Y;
-			}
+		nl = qui_ray_ycrcl_(p, d, &nphi);
+		if (nl < l) {
+			l = nl;
+			phi = nphi;
+			stts = QUI_MAN_STTS_ROT_Y;
+		}
 
-			nl = qui_ray_zcrcl_(p, d, &nphi);
-			if (nl < l) {
-				l = nl;
-				phi = nphi;
-				stts = QUI_MAN_STTS_ROT_Z;
-			}
+		nl = qui_ray_zcrcl_(p, d, &nphi);
+		if (nl < l) {
+			l = nl;
+			phi = nphi;
+			stts = QUI_MAN_STTS_ROT_Z;
+		}
 
-			nl = qui_ray_vcrcl_(pv, &nphi);
-			if (nl < l) {
-				l = nl;
-				phi = nphi;
-				stts = QUI_MAN_STTS_ROT_V;
-			}
+		nl = qui_ray_vcrcl_(pv, &nphi);
+		if (nl < l) {
+			l = nl;
+			phi = nphi;
+			stts = QUI_MAN_STTS_ROT_V;
+		}
 
-			nl = qui_ray_crnr_(pv);
-			if (nl < l) {
-				l = nl;
-				qm->scl = length_float2(pv) / sqrtf(2.f) / QUI_MAN_S_DXY;
-				stts = QUI_MAN_STTS_SCL;
-			}
+		nl = qui_ray_crnr_(pv);
+		if (nl < l) {
+			l = nl;
+			qm->scl = length_float2(pv) / sqrtf(2.f) / QUI_MAN_S_DXY;
+			stts = QUI_MAN_STTS_SCL;
+		}
 
-			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f });
-			if (nl < l) {
-				l = nl;
-				qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
-				stts = QUI_MAN_STTS_MOV_X;
-			}
+		nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f });
+		if (nl < l) {
+			l = nl;
+			qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
+			stts = QUI_MAN_STTS_MOV_X;
+		}
 
-			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f });
-			if (nl < l) {
-				l = nl;
-				qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f }).y;
-				stts = QUI_MAN_STTS_MOV_Y;
-			}
+		nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f });
+		if (nl < l) {
+			l = nl;
+			qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f }).y;
+			stts = QUI_MAN_STTS_MOV_Y;
+		}
 
-			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
-			if (nl < l) {
-				l = nl;
-				qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
-				stts = QUI_MAN_STTS_MOV_Z;
-			}
+		nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
+		if (nl < l) {
+			l = nl;
+			qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
+			stts = QUI_MAN_STTS_MOV_Z;
+		}
 
-			if (l * fV < QUI_MAN_EPS) {
+		if (l * fV < QUI_MAN_EPS) {
+			if (qi->rls & QUI_IN_LMB) {
 				qm->phi = phi;
 				qm->stts = stts;
+			} else {
+				more = stts;
+				qm->scl = 1.f;
 			}
+		} else {
+			qm->scl = 1.f;
 		}
 	} else {
 		int phi = 0;
@@ -497,7 +507,6 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 			break;
 		case QUI_MAN_STTS_SCL:
 			qm->scl = length_float2(pv) / sqrtf(2.f) / QUI_MAN_S_DXY;
-			printf("scl = %f\n", qm->scl);
 			break;
 		case QUI_MAN_STTS_MOV_X:
 			dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
@@ -555,6 +564,35 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 		break;
 		case QUI_MAN_STTS_SCL:
 		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
+		break;
+	};
+
+	switch(more) {
+	case QUI_MAN_STTS_NIL:
+		break;
+	case QUI_MAN_STTS_MOV_X:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
+		break;
+	case QUI_MAN_STTS_MOV_Y:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
+		break;
+	case QUI_MAN_STTS_MOV_Z:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
+		break;
+	case QUI_MAN_STTS_ROT_X:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X);
+		break;
+	case QUI_MAN_STTS_ROT_Y:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y);
+		break;
+	case QUI_MAN_STTS_ROT_Z:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z);
+		break;
+	case QUI_MAN_STTS_ROT_V:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V);
+		break;
+		case QUI_MAN_STTS_SCL:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
 		break;
 	};
 
@@ -761,6 +799,13 @@ int main(int argc, char *argv[]) {
 		float skl = 1.f;
 		float3_t tr = {0, 0, 0};
 
+		glEnable(GL_DEPTH_TEST);
+		glUseProgram(cube_po);
+		glUniformMatrix4fv(M_loc_cube, 1, 0, &PVM.m[0][0]);
+		glBindVertexArray(cube_vao);
+		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
+
+
 		if (qui_man(&qm, &qs, &qi, P, V, &tr, &obr, &skl)) {
 			printf("set\n");
 			S = (float44_t){
@@ -795,13 +840,6 @@ int main(int argc, char *argv[]) {
 		Q = quaternion_to_rotation_matrix(obr);
 		VM = mul_float44(M, mul_float44(T, mul_float44(S, mul_float44(Q, V))));
 		PVM = mul_float44(VM, P);
-
-		glEnable(GL_DEPTH_TEST);
-		glUseProgram(cube_po);
-		glUniformMatrix4fv(M_loc_cube, 1, 0, &PVM.m[0][0]);
-		glBindVertexArray(cube_vao);
-		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
-
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);
