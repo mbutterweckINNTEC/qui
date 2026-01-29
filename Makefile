@@ -2,6 +2,6 @@ CC = gcc
 CFLGS = -ggdb -O1
 LFLGS = -lglfw -lGLEW -lEGL -lGL -lGLU -lOpenGL -lm
 
-qui_demo: qui_demo.c
-	$(CC) $(CFLGS) $^ -o $@ $(LFLGS)
+qui_demo: qui_demo.c qui_def.h qui_in.h qui_shdr.h qui_util.h
+	$(CC) $(CFLGS) $< -o $@ $(LFLGS)
 

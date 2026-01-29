@@ -115,3 +115,27 @@ static float qui_ray_crnr_(float2_t p) {
 
 	return l;
 }
+
+static float3_t qui_ray_ln_near(float3_t ro, float3_t rd, float3_t lo, float3_t ld) {
+	float3_t n = cross_float3(rd, cross_float3(ld, rd));
+
+	return add_float3(lo, scale_float3(ld, dot_float3(sub_float3(ro, lo), n) / dot_float3(ld, n)));
+}
+
+static float qui_ray_seg_dst(float3_t ro, float3_t rd, float3_t a, float3_t b) {
+	rd = normal_float3(rd);
+	float3_t abd = sub_float3(b, a);
+	float lab = length_float3(abd);
+
+	float3_t c = qui_ray_ln_near(ro, rd, a, abd);
+
+	if (length_float3(sub_float3(c, a)) < lab && length_float3(sub_float3(c, b)) < lab) {
+		float3_t n = normal_float3(cross_float3(abd, rd));
+		return fabs(dot_float3(n, sub_float3(ro, a)));
+	}
+
+	return fmin(
+		length_float3(sub_float3(a, add_float3(ro, scale_float3(rd, dot_float3(rd, sub_float3(a, ro)))))),
+		length_float3(sub_float3(b, add_float3(ro, scale_float3(rd, dot_float3(rd, sub_float3(b, ro))))))
+	);
+}

@@ -91,6 +91,7 @@ struct qui_man {
 	int stts;
 	int phi, dphi;
 	float scl;
+	float dlt;
 };
 
 int qui_man_mk(struct qui_man *qm) {
@@ -254,7 +255,7 @@ enum {
 
 #define QUI_MAN_DRW_PASS_N 4
 
-int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t V, int op[], int flgs) {
+int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t V, float44_t W, int op[], int flgs) {
 	static int const sv_def[] = {
 		/* x axis */ 0,
 		/* y axis */ QUI_MAN_PLN_X_N,
@@ -300,11 +301,6 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 
 	float44_t M = mul_float44(V, P);
 
-	//float dV = cbrt(det_float33(float33_float44(V)));
-//	float dV = sqrtf(V.m00 * V.m11 - V.m01 * V.m10);
-	float sV = frobenius_float33(float33_float44(V)) / sqrt(3);
-	float scl = 1.f;
-
 	if (!qm || !qs)
 		return -1;
 
@@ -314,21 +310,11 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 			case QUI_MAN_OP_PIE_STRT: dsc_strt = op[i]; break;
 			case QUI_MAN_OP_PIE_ANGL: dsc_angl = op[i]; break;
 			case QUI_MAN_OP_LN_WDTH: lnwdth = op[i]; break;
-			case QUI_MAN_OP_SCL:
-				scl = (float)op[i] / 65536.f;
-				break;
 			};
 		}
 	}
 
-	float44_t DP = {
-		sV * scl, 0.f, 0.f, 0.f,
-		0.f, sV * scl, 0.f, 0.f,
-		0.f, 0.f, 1.f, 0.f,
-		0.f, 0.f, 0.f, 1.f
-	};
-
-	DP = mul_float44(DP, P);
+	W = mul_float44(W, P);
 
 	for (int i = 0; i < QUI_MAN_FLGS_BITS_N; ++i) {
 		for (int j = 0; j < QUI_MAN_DRW_PASS_N; ++j) {
@@ -360,7 +346,7 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 	}
 
 	if (pass & 2) {
-		glUniformMatrix4fv(qs->M, 1, 0, &DP.m[0][0]);
+		glUniformMatrix4fv(qs->M, 1, 0, &W.m[0][0]);
 		glMultiDrawArrays(GL_LINE_STRIP, sv[1], nv[1], iv[1]);
 	}
 
@@ -386,9 +372,9 @@ int qui_man_drw(struct qui_man *qm, struct qui_shdr *qs, float44_t P, float44_t 
 	if (pass & 8) {
 		if (dsc_strt) {
 			quaternion_t q = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -dsc_strt * M_PI / 180.0);
-			M = mul_float44(quaternion_to_rotation_matrix(q), DP);
+			M = mul_float44(quaternion_to_rotation_matrix(q), W);
 		} else {
-			M = DP;
+			M = W;
 		}
 		glUniformMatrix4fv(qs->M, 1, 0, &M.m[0][0]);
 		glMultiDrawArrays(GL_TRIANGLE_FAN, sv[3], nv[3], iv[3]);
@@ -407,14 +393,26 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 	float44_t iPV = invert_float44(PV, detPV);
 	float3_t p = float3_float4(cotransform_float44(iPV, (float4_t){ qi->p.x, qi->p.y, 0.f, 1.f }));
 	float3_t d = normal_float3(m_float3(cotransform_float44(iPV, (float4_t){ 0.f, 0.f, 1.f, 0.f })));
-	float2_t pv = (float2_t){ p.x, p.y };// (float2_t){ qi->p.x * P.m11 / P.m00, qi->p.y }; /* todo:@michal: proper translation*/
+	float fV = frobenius_float33(float33_float44(V)) / sqrt(3);
+	float44_t W = {
+		fV, 0.f, 0.f, 0.f,
+		0.f, fV, 0.f, 0.f,
+		0.f, 0.f, fV, 0.f,
+		V.m30, V.m31, V.m32, 1.f
+	};
+	float44_t PW = (mul_float44(W, P));
+	float detPW = det_float44(PW);
+	float44_t iPW = invert_float44(PW, detPW);
+	float2_t pv = m_float2(float3_float4(cotransform_float44(iPW, (float4_t){ qi->p.x, qi->p.y, 0.f, 1.f })));
+
 	int op[16], stts = 0;
 	qm->scl = 1.f;
+	float dlt = qm->dlt;
 
 	/* input handling */
 	if (QUI_MAN_STTS_NIL == qm->stts) {
 		if (qi->rls & QUI_IN_LMB) {
-			float l, nl, scl = frobenius_float33(float33_float44(V))/ sqrt(3.0);
+			float l, nl;
 			int stts = 0, phi = 0, nphi = 0;
 
 			l = qui_ray_xcrcl_(p, d, &phi);
@@ -448,7 +446,28 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 				stts = QUI_MAN_STTS_SCL;
 			}
 
-			if (l * scl < QUI_MAN_EPS) {
+			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f });
+			if (nl < l) {
+				l = nl;
+				qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
+				stts = QUI_MAN_STTS_MOV_X;
+			}
+
+			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f });
+			if (nl < l) {
+				l = nl;
+				qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f }).y;
+				stts = QUI_MAN_STTS_MOV_Y;
+			}
+
+			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
+			if (nl < l) {
+				l = nl;
+				qm->dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
+				stts = QUI_MAN_STTS_MOV_Z;
+			}
+
+			if (l * fV < QUI_MAN_EPS) {
 				qm->phi = phi;
 				qm->stts = stts;
 			}
@@ -480,6 +499,15 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 			qm->scl = length_float2(pv) / sqrtf(2.f) / QUI_MAN_S_DXY;
 			printf("scl = %f\n", qm->scl);
 			break;
+		case QUI_MAN_STTS_MOV_X:
+			dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
+			break;
+		case QUI_MAN_STTS_MOV_Y:
+			dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f }).y;
+			break;
+		case QUI_MAN_STTS_MOV_Z:
+			dlt = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
+			break;
 		};
 
 		if (qi->rls & QUI_IN_LMB) {
@@ -493,24 +521,40 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 		}
 	}
 
+	W = (float44_t) {
+		fV * qm->scl, 0.f, 0.f, 0.f,
+		0.f, fV * qm->scl, 0.f, 0.f,
+		0.f, 0.f, fV * qm->scl, 0.f,
+		V.m30, V.m31, V.m32, 1.f
+	};
+
 	switch(qm->stts) {
+	case QUI_MAN_STTS_MOV_X:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
+		break;
+	case QUI_MAN_STTS_MOV_Y:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
+		break;
+	case QUI_MAN_STTS_MOV_Z:
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
+		break;
 	case QUI_MAN_STTS_NIL:
-		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_CRCL_FRM);
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_CRCL_FRM);
 		break;
 	case QUI_MAN_STTS_ROT_X:
-		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X | QUI_MAN_FLGS_PIE_X);
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X | QUI_MAN_FLGS_PIE_X);
 		break;
 	case QUI_MAN_STTS_ROT_Y:
-		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y | QUI_MAN_FLGS_PIE_Y);
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y | QUI_MAN_FLGS_PIE_Y);
 		break;
 	case QUI_MAN_STTS_ROT_Z:
-		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z | QUI_MAN_FLGS_PIE_Z);
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z | QUI_MAN_FLGS_PIE_Z);
 		break;
 	case QUI_MAN_STTS_ROT_V:
-		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V | QUI_MAN_FLGS_PIE_V);
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V | QUI_MAN_FLGS_PIE_V);
 		break;
 		case QUI_MAN_STTS_SCL:
-		qui_man_drw(qm, qs, P, V, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_SCL, qm->scl * 65536.f, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
+		qui_man_drw(qm, qs, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
 		break;
 	};
 
@@ -529,6 +573,15 @@ int qui_man(struct qui_man *qm, struct qui_shdr *qs, struct qui_in *qi, float44_
 		break;
 	case QUI_MAN_STTS_ROT_V:
 		*mq = axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0);
+		break;
+	case QUI_MAN_STTS_MOV_X:
+		*mt = (float3_t){ dlt - qm->dlt, 0.f, 0.f };
+		break;
+	case QUI_MAN_STTS_MOV_Y:
+		*mt = (float3_t){ 0.f, dlt - qm->dlt, 0.f };
+		break;
+	case QUI_MAN_STTS_MOV_Z:
+		*mt = (float3_t){  0.f, 0.f, dlt - qm->dlt };
 		break;
 	};
 
@@ -551,12 +604,18 @@ int main(int argc, char *argv[]) {
 	float bg[4] = { 170.f/255.f, 170.f/255.f, 170.f/255.f, 0};
 	float44_t M = identity_sc;
 	float44_t Q = identity_sc;
-	float44_t V = identity_sc;
+	float44_t V = (float44_t){
+				1.f, 0.f, 0.f, 0.f,
+				0.f, 1.f, 0.f, 0.f,
+				0.f, 0.f, 1.f, 0.f,
+				0.5, 0.3333, 0.0, 1.f
+			};
 	float44_t VM = identity_sc;
 	float44_t P = orthographic(1.f, -1.f, 1.f, -1.f, -1.f, 1.f);
 	float44_t PV = identity_sc;
 	float44_t PVM = identity_sc;
 	float44_t S = identity_sc;
+	float44_t T = identity_sc;
 
 	quaternion_t q = { 1.0 };
 	float angl = 0.0, ar;
@@ -612,19 +671,35 @@ int main(int argc, char *argv[]) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (glfwGetKey(wndw, GLFW_KEY_UP) == GLFW_PRESS) {
-			V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125),-sin(0.03125), 0, 0 }));
+			if (glfwGetKey(wndw, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+				V = mul_float44(V, (float44_t){ 1, 0, 0, 0,    0, 1, 0, 0,   0, 0, 1.0, 0,   0, 0.125, 0, 1});
+			} else {
+				V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125),-sin(0.03125), 0, 0 }));
+			}
 		}
 
 		if (glfwGetKey(wndw, GLFW_KEY_DOWN) == GLFW_PRESS) {
-			V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), sin(0.03125), 0, 0 }));
+			if (glfwGetKey(wndw, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+				V = mul_float44(V, (float44_t){ 1, 0, 0, 0,    0, 1, 0, 0,   0, 0, 1.0, 0,   0, -0.125, 0, 1});
+			} else {
+				V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), sin(0.03125), 0, 0 }));
+			}
 		}
 
 		if (glfwGetKey(wndw, GLFW_KEY_LEFT) == GLFW_PRESS) {
-			V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), 0,-sin(0.03125), 0 }));
+			if (glfwGetKey(wndw, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+				V = mul_float44(V, (float44_t){ 1, 0, 0, 0,    0, 1, 0, 0,   0, 0, 1.0, 0, -0.125, 0, 0, 1});
+			} else {
+				V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), 0,-sin(0.03125), 0 }));
+			}
 		}
 
 		if (glfwGetKey(wndw, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-			V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), 0, sin(0.03125), 0 }));
+			if (glfwGetKey(wndw, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+				V = mul_float44(V, (float44_t){ 1, 0, 0, 0,    0, 1, 0, 0,   0, 0, 1.0, 0,  0.125, 0, 0, 1});
+			} else {
+				V = mul_float44(V, quaternion_to_rotation_matrix((quaternion_t){cos(0.03125), 0, sin(0.03125), 0 }));
+			}
 		}
 
 		if (glfwGetKey(wndw, GLFW_KEY_KP_ADD) == GLFW_PRESS) {
@@ -694,7 +769,13 @@ int main(int argc, char *argv[]) {
 				0.f, 0.f, skl, 0.f,
 				0.f, 0.f, 0.f, 1.f
 			};
-			M = mul_float44(M, mul_float44(S, quaternion_to_rotation_matrix(obr)));
+			T = (float44_t){
+				1.f, 0.f, 0.f, 0.f,
+				0.f, 1.f, 0.f, 0.f,
+				0.f, 0.f, 1.f, 0.f,
+				tr.x, tr.y, tr.z, 1.f
+			};
+			M = mul_float44(M, mul_float44(T, mul_float44(S, quaternion_to_rotation_matrix(obr))));
 			obr = (quaternion_t){ 1.f, 0.f, 0.f, 0.f };
 			skl = 1.f;
 		}
@@ -705,8 +786,14 @@ int main(int argc, char *argv[]) {
 			0.f, 0.f, skl, 0.f,
 			0.f, 0.f, 0.f, 1.f
 		};
+		T = (float44_t){
+			1.f, 0.f, 0.f, 0.f,
+			0.f, 1.f, 0.f, 0.f,
+			0.f, 0.f, 1.f, 0.f,
+			tr.x, tr.y, tr.z, 1.f
+		};
 		Q = quaternion_to_rotation_matrix(obr);
-		VM = mul_float44(M, mul_float44(S, mul_float44(Q, V)));
+		VM = mul_float44(M, mul_float44(T, mul_float44(S, mul_float44(Q, V))));
 		PVM = mul_float44(VM, P);
 
 		glEnable(GL_DEPTH_TEST);
