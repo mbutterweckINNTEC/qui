@@ -84,27 +84,3 @@ char *qui_fsh =
 	"	K = k;"				"\n"
 	"}"					"\n";
 
-
-struct qui_shdr {
-	int po;
-
-	/* uniform locations */
-	int M;
-};
-
-int qui_shdr_mk(struct qui_shdr *qs) {
-	if (!qs)
-		return -1;
-
-	qs->po = shdr_mk(qui_vsh, qui_fsh);
-
-	if (!qs->po)
-		return -1;
-
-	qs->M = glGetUniformLocation(qs->po, "M");
-
-	if (qs->M == -1)
-		return -1;
-
-	return 0;
-}
