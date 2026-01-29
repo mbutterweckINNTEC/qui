@@ -83,7 +83,6 @@ static float qui_ray_vcrcl_(float2_t p, int *out) {
 		}
 	}
 
-	printf ("vl = %f, phi = %d\n", l, *out);
 	return l;
 }
 
