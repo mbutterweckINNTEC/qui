@@ -1,3 +1,5 @@
+struct qui_fnt;
+
 struct qui_ctx {
 	/* glsl program */
 	int po;
@@ -7,6 +9,9 @@ struct qui_ctx {
 
 	/* manipulator objects */
 	int man_bo, man_vao;
+
+	/* font */
+	struct qui_fnt *fnt;
 };
 
 int qui_man_ctx_mk(int *bo, int *vao);

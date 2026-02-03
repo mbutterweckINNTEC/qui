@@ -16,6 +16,8 @@
 #include "qui_ctx.h"
 #include "qui_util.h"
 #include "qui_man.h"
+#include "qui_fnt.h"
+#include "qui_txt.h"
 
 char *cube_vsh =
 	"#version 440"				"\n"
@@ -79,7 +81,6 @@ void qui_scrll_cb(GLFWwindow *wndw, double x, double y) {
 	qui_scrll = y;
 }
 
-
 int main(int argc, char *argv[]) {
 	GLFWwindow *wndw;
 	int w = 1024, h = 1024, qui_po, cube_po, cube_bo[2], cube_vao, M_loc_cube, qui_bo, qui_vao, M_loc_qui;
@@ -105,6 +106,7 @@ int main(int argc, char *argv[]) {
 	struct qui_ctx qc = {};
 	struct qui_in qi = {};
 	struct qui_man qm = {};
+	static struct qui_fnt fnt = {};
 
 	glfwInit();
 
@@ -146,6 +148,11 @@ int main(int argc, char *argv[]) {
 	quaternion_t mq = { 1, 0, 0, 0 };
 	float3_t mt = {0, 0, 0};
 	float ms = 1.f;
+
+	qui_fnt_ld(&fnt, "./iosevka.obj");
+
+	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+	qui_fnt(&qc, &fnt);
 
 	while(!glfwWindowShouldClose(wndw)) {
 		glfwGetWindowSize(wndw, &w, &h);
@@ -267,6 +274,8 @@ int main(int argc, char *argv[]) {
 		M = mul_float44(mul_float44(S, Q), T);
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
+
+		qui_txt(&qc, "haha!", PV);
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);
