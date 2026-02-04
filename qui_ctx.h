@@ -1,5 +1,7 @@
 struct qui_fnt;
 
+#define QUI_STRM_SZ 0x10000
+
 enum {
 	QUI_FLGS_AA = 0x1	/* Setup for old-school antialiasing, affects colors. */
 };
@@ -17,11 +19,15 @@ struct qui_ctx {
 	/* font */
 	struct qui_fnt *fnt;
 
+	/* streaming buffer */
+	int strm_vbo, strm_vao, strm_n;
+
 	/* general */
 	int flgs;
 };
 
 int qui_man_ctx_mk(int *bo, int *vao);
+int qui_strm_mk(int *strm_vbo, int *strm_vao);
 
 int qui_ctx_mk(struct qui_ctx *qc) {
 	if (!qc)
@@ -39,8 +45,15 @@ int qui_ctx_mk(struct qui_ctx *qc) {
 
 	qui_man_ctx_mk(&qc->man_bo, &qc->man_vao);
 	
-	if (qc->man_vao == -1 || qc->man_bo)
+	if (0 == qc->man_vao || 0 == qc->man_bo)
 		return -1;
+
+	qui_strm_mk(&qc->strm_vbo, &qc->strm_vao);
+
+	if (0 == qc->strm_vao || 0 == qc->strm_vbo)
+		return -1;
+
+	qc->strm_n = 0;
 
 	return 0;
 }

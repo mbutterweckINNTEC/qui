@@ -15,7 +15,9 @@
 #include "qui_shdr.h"
 #include "qui_ctx.h"
 #include "qui_util.h"
+#include "qui_strm.h"
 #include "qui_man.h"
+#include "qui_ngon.h"
 #include "qui_fnt.h"
 #include "qui_txt.h"
 
@@ -115,6 +117,7 @@ int main(int argc, char *argv[]) {
 	glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
 	wndw = glfwCreateWindow(w, h, "Quaternion UI prototype", NULL, NULL);
 //	glfwSetScrollCallback(wndw, sqrrl);
@@ -161,7 +164,7 @@ int main(int argc, char *argv[]) {
 		ar = (float)w / (float)h;
 
 		glViewport(0, 0, w, h);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (glfwGetKey(wndw, GLFW_KEY_UP) == GLFW_PRESS) {
 			if (glfwGetKey(wndw, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -260,6 +263,7 @@ int main(int argc, char *argv[]) {
 		glVertexAttrib4fv(1, (GLfloat[]){1,1,1,1});
 		glBindVertexArray(cube_vao);
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
+		glDisable(GL_DEPTH_TEST);
 
 		if (qui_man(&qc, &qm, &qi, P, V, &mt, &mq, &ms)) {
 		}
@@ -281,16 +285,15 @@ int main(int argc, char *argv[]) {
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
 
-		glColorMask(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glColorMask(1, 1, 1, 1);
-
 		qui_txt(&qc, "ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+
+		qui_ngon(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);
 
 		qui_in_nxt(&qi);
+
 
 		angl += 0.005;
 	}
