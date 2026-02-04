@@ -114,6 +114,7 @@ int main(int argc, char *argv[]) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	wndw = glfwCreateWindow(w, h, "Quaternion UI prototype", NULL, NULL);
 //	glfwSetScrollCallback(wndw, sqrrl);
@@ -231,6 +232,10 @@ int main(int argc, char *argv[]) {
 		} else {
 			qui_in_rls(&qi, QUI_IN_ESC);
 		}
+		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
+			qui_txt_ms ^= 1;
+			printf("%s\n", qui_txt_ms ? "multisample" : "smooth");
+		}
 
 		{
 			double x = 0.0, y = 0.0;
@@ -252,6 +257,7 @@ int main(int argc, char *argv[]) {
 		glEnable(GL_DEPTH_TEST);
 		glUseProgram(cube_po);
 		glUniformMatrix4fv(M_loc_cube, 1, 0, &PVM.m[0][0]);
+		glVertexAttrib4fv(1, (GLfloat[]){1,1,1,1});
 		glBindVertexArray(cube_vao);
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 
@@ -275,7 +281,11 @@ int main(int argc, char *argv[]) {
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
 
-		qui_txt(&qc, "haha!", PV);
+		glColorMask(0, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glColorMask(1, 1, 1, 1);
+
+		qui_txt(&qc, "ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);

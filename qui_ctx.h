@@ -1,5 +1,9 @@
 struct qui_fnt;
 
+enum {
+	QUI_FLGS_AA = 0x1	/* Setup for old-school antialiasing, affects colors. */
+};
+
 struct qui_ctx {
 	/* glsl program */
 	int po;
@@ -12,6 +16,9 @@ struct qui_ctx {
 
 	/* font */
 	struct qui_fnt *fnt;
+
+	/* general */
+	int flgs;
 };
 
 int qui_man_ctx_mk(int *bo, int *vao);

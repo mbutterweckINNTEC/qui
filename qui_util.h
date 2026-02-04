@@ -1,4 +1,24 @@
 
+static int qui_utf8_pop(char **a) {
+    int c = (unsigned char)(*a)[0];
+    if (c < 0x80) {
+		(*a)++;
+		return c;
+	}
+    if ((c & 0xe0) == 0xc0) {
+		c = ((c&31)<<6) | ((*a)[1]&0x3f);
+		*a += 2;
+		return c;
+	}
+    if ((c & 0xf0) == 0xe0) {
+		c = ((c&0xf)<<0xC) | (((*a)[1]&0x3f)<<6) | ((*a)[2]&0x3f);
+		*a+=3; return c;
+	}
+    c = ((c&7)<<0x12) | (((*a)[1]&0x3f)<<12) | (((*a)[2]&0x3f)<<6) | ((*a)[3]&0x3f);
+	*a+=4;
+    return c;
+}
+
 static float3_t qui_rnbw(float t) {
 	int s = t;
 	int r = t - s;

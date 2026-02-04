@@ -11,7 +11,7 @@ struct qui_fnt {
 		float lsb;
 		float rsb;
 		float xadv;
-	} glph[QUI_FNT_MX];
+	} glph[QUI_FNT_MX];	/* michal@todo: we can reduce size by making it hashtable */
 };
 
 static int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */);
