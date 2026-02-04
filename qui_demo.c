@@ -288,6 +288,7 @@ int main(int argc, char *argv[]) {
 		qui_txt(&qc, "ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
 
 		qui_ngon(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
+		qui_ngon_strk(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);

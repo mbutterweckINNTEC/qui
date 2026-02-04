@@ -11,7 +11,6 @@ int qui_ngon(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
 	v = qui_strm_map(qc->strm_vbo, &qc->strm_n, s, &b);
 
 	if (NULL == v) {
-		printf("no mapping %d\n", glGetError());
 		return -1;
 	}
 
@@ -50,4 +49,35 @@ int qui_ngon(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
     glDisable(GL_STENCIL_TEST);
 
 	return 0;    
+}
+
+int qui_ngon_strk(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
+	float2_t *v;
+	int s = n * sizeof(float2_t);
+	int b;
+
+	if (!qc || !p || n < 3)
+		return -1;
+
+	/* upload */
+	v = qui_strm_map(qc->strm_vbo, &qc->strm_n, s, &b);
+
+	if (NULL == v) {
+		return -1;
+	}
+
+	b /= sizeof(float2_t);
+
+	memcpy(v, p, s);
+
+	glUnmapNamedBuffer(qc->strm_vbo);
+
+	/* draw setup */
+	glUseProgram(qc->po);
+	glUniformMatrix4fv(qc->M, 1, 0, &M.m[0][0]);
+	glBindVertexArray(qc->strm_vao);
+	glVertexAttrib4fv(1, (GLfloat*)&c);
+
+	glDrawArrays(GL_LINE_LOOP, b, n);
+
 }
