@@ -49,7 +49,8 @@ static int qui_txt(struct qui_ctx *qc, char *a, float44_t M, float4_t c) {
 		glUniformMatrix4fv(qc->M, 1, 0, &MX.m[0][0]);
 
 		/* michal@todo: it may be good to change it to glMultiDrawElements and index uniform array through drawID */
-		glDrawElements(GL_TRIANGLES, qc->fnt->glph[u].en, GL_UNSIGNED_INT, (void*)(qc->fnt->glph[u].e0 * sizeof(int)));
+		if (qc->fnt->glph[u].en && u != ' ')
+			glDrawElements(GL_TRIANGLES, qc->fnt->glph[u].en, GL_UNSIGNED_INT, (void*)(qc->fnt->glph[u].e0 * sizeof(int)));
 
 		X.m[3][0] += qc->fnt->glph[u].xadv;
 	}

@@ -16,10 +16,11 @@
 #include "qui_ctx.h"
 #include "qui_util.h"
 #include "qui_strm.h"
-#include "qui_man.h"
-#include "qui_ngon.h"
 #include "qui_fnt.h"
 #include "qui_txt.h"
+#include "qui_ngon.h"
+#include "qui_val.h"
+#include "qui_man.h"
 
 char *cube_vsh =
 	"#version 440"				"\n"
@@ -285,10 +286,10 @@ int main(int argc, char *argv[]) {
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
 
-		qui_txt(&qc, "ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+		//qui_txt(&qc, "ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
 
-		qui_ngon(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
-		qui_ngon_strk(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});
+//		qui_ngon(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
+//		qui_ngon_strk(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);

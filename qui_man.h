@@ -270,7 +270,7 @@ int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int o
 
 	glEnable(GL_BLEND);
 	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR );
+	glBlendFunc(GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR);
 	glBlendColor(0.75, 0.75, 0.75, 0.75);
 
 	glUseProgram(qc->po);
@@ -340,7 +340,6 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, struct qui_in *qi, float44_t
 		0.f, 0.f, *ms, 0.f,
 		mt_.x, mt_.y, mt_.z, 1.f
 	};
-
 	V = mul_float44(T, V);
 
 	float44_t PV = mul_float44(V, P);
@@ -359,6 +358,13 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, struct qui_in *qi, float44_t
 	float detPW = det_float44(PW);
 	float44_t iPW = invert_float44(PW, detPW);
 	float2_t pv = m_float2(float3_float4(cotransform_float44(iPW, (float4_t){ qi->p.x, qi->p.y, 0.f, 1.f })));
+	float44_t U = {
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		V.m30, V.m31, V.m32, 1.f
+	};
+
 
 	int op[16];
 	float ds = 1.f;
@@ -565,6 +571,69 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, struct qui_in *qi, float44_t
 		break;
 		case QUI_MAN_STTS_SCL:
 		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
+		break;
+	};
+
+	float3_t bg;
+	char *nm = "";
+	char *unt = "";
+	switch(qm->stts) {
+	case QUI_MAN_STTS_NIL:
+		break;
+	case QUI_MAN_STTS_ROT_X:
+		nm = "∢x";
+		unt = "°";
+		bg = QUI_MAN_X_CLR;
+		break;
+	case QUI_MAN_STTS_MOV_X:
+		nm = "→x";
+		bg = QUI_MAN_X_CLR;
+		break;
+	case QUI_MAN_STTS_ROT_Y:
+		nm = "∢y";
+		unt = "°";
+		bg = QUI_MAN_Y_CLR;
+		break;
+	case QUI_MAN_STTS_MOV_Y:
+		nm = "→y";
+		bg = QUI_MAN_Y_CLR;
+		break;
+	case QUI_MAN_STTS_ROT_Z:
+		nm = "∢z";
+		unt = "°";
+		bg = QUI_MAN_Z_CLR;
+		break;
+	case QUI_MAN_STTS_MOV_Z:
+		nm = "→z";
+		bg = QUI_MAN_Z_CLR;
+		break;
+	case QUI_MAN_STTS_ROT_V:
+		nm = "∢v";
+		unt = "°";
+		bg = QUI_MAN_V_CLR;
+		break;
+	case QUI_MAN_STTS_SCL:
+		nm = "↔";
+		bg = QUI_MAN_S_CLR;
+		break;
+	};
+
+	float44_t PU = mul_float44(U, P);
+
+	switch(qm->stts) {
+	case QUI_MAN_STTS_NIL:
+		break;
+	case QUI_MAN_STTS_ROT_X:
+	case QUI_MAN_STTS_ROT_Y:
+	case QUI_MAN_STTS_ROT_Z:
+	case QUI_MAN_STTS_ROT_V:
+		qui_val_i(qc, PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &dphi);
+		break;
+	case QUI_MAN_STTS_MOV_X:
+	case QUI_MAN_STTS_MOV_Y:
+	case QUI_MAN_STTS_MOV_Z:
+		break;
+	case QUI_MAN_STTS_SCL:
 		break;
 	};
 

@@ -19,11 +19,11 @@
 #define QUI_MAN_ATTR_N 2
 #define QUI_MAN_SZ (QUI_MAN_ALL_N * QUI_MAN_ATTR_N * sizeof(float3_t))
 
-#define QUI_MAN_X_CLR (float3_t) { 1.0f, 0.5f, 0.5f };
-#define QUI_MAN_Y_CLR (float3_t) { 0.5f, 1.0f, 0.5f };
-#define QUI_MAN_Z_CLR (float3_t) { 0.5f, 0.5f, 1.0f };
-#define QUI_MAN_V_CLR (float3_t) { 1.0f, 0.75f, 0.5f };	/* view axis */
-#define QUI_MAN_S_CLR (float3_t) { 0.5f, 0.75f, 1.0f };	/* resize frame */
+#define QUI_MAN_X_CLR (float3_t) { 1.0f, 0.5f, 0.5f }
+#define QUI_MAN_Y_CLR (float3_t) { 0.5f, 1.0f, 0.5f }
+#define QUI_MAN_Z_CLR (float3_t) { 0.5f, 0.5f, 1.0f }
+#define QUI_MAN_V_CLR (float3_t) { 1.0f, 0.75f, 0.5f }	/* view axis */
+#define QUI_MAN_S_CLR (float3_t) { 0.5f, 0.75f, 1.0f }	/* resize frame */
 
 #define QUI_MAN_R_XYZ 0.875f
 #define QUI_MAN_R_V 1.f
