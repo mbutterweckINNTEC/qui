@@ -18,6 +18,10 @@ enum {
 	QUI_IN_DOT = 0x4000,
 	QUI_IN_MINUS = 0x8000,
 	QUI_IN_ESC = 0x10000,
+	QUI_IN_BCK = 0x20000,
+	QUI_IN_RET = 0x40000,
+
+	QUI_IN_NUM = 0x3ff0,
 
 	QUI_IN_ALL = ~0
 };

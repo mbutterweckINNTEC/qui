@@ -1,4 +1,5 @@
 struct qui_fnt;
+struct qui_in;
 
 #define QUI_STRM_SZ 0x10000
 
@@ -21,6 +22,9 @@ struct qui_ctx {
 
 	/* streaming buffer */
 	int strm_vbo, strm_vao, strm_n;
+
+	/* inputs */
+	struct qui_in *in;
 
 	/* general */
 	int flgs;

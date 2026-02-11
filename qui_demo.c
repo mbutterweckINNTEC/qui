@@ -29,26 +29,26 @@ char *cube_vsh =
 	"uniform mat4 M;"			"\n"
 	"out     vec4 k;"			"\n"
 	"out     vec4 p;"			"\n"
-	""					"\n"
+	""							"\n"
 	"void main() {"				"\n"
-	"	p = M * v;"			"\n"
+	"	p = M * v;"				"\n"
 	"	gl_Position = p;"		"\n"
-	"	k = c;"				"\n"
-	"}"					"\n";
+	"	k = c;"					"\n"
+	"}"							"\n";
 
 char *cube_fsh =
-	"#version 440"					"\n"
-	"in  vec4 k;"					"\n"
-	"in  vec4 p;"					"\n"
-	"out vec4 K;"					"\n"
-	""						"\n"
-	"void main() {"					"\n"
-	"	vec3 s = dFdx(p.xyz);"			"\n"
-	"	vec3 t = dFdy(p.xyz);"			"\n"
-	"	vec3 n = normalize(cross(s, t));"	"\n"
+	"#version 440"								"\n"
+	"in  vec4 k;"								"\n"
+	"in  vec4 p;"								"\n"
+	"out vec4 K;"								"\n"
+	""											"\n"
+	"void main() {"								"\n"
+	"	vec3 s = dFdx(p.xyz);"					"\n"
+	"	vec3 t = dFdy(p.xyz);"					"\n"
+	"	vec3 n = normalize(cross(s, t));"		"\n"
 	"	vec3 L = normalize(vec3(0.5,0.5,1));"	"\n"
-	"	K = k * dot(n, L);"			"\n"
-	"}"						"\n";
+	"	K = k * dot(n, L);"						"\n"
+	"}"											"\n";
 
 
 float cube_v[] = {
@@ -91,11 +91,11 @@ int main(int argc, char *argv[]) {
 	float44_t M = identity_sc;
 	float44_t Q = identity_sc;
 	float44_t V = (float44_t){
-				1.f, 0.f, 0.f, 0.f,
-				0.f, 1.f, 0.f, 0.f,
-				0.f, 0.f, 1.f, 0.f,
-				0.5, 0.3333, 0.0, 1.f
-			};
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		0.5, 0.3333, 0.0, 1.f
+	};
 	float44_t VM = identity_sc;
 	float44_t P = orthographic(1.f, -1.f, 1.f, -1.f, -1.f, 1.f);
 	float44_t PV = identity_sc;
@@ -156,6 +156,8 @@ int main(int argc, char *argv[]) {
 
 	qui_fnt_ld(&fnt, "./iosevka.obj");
 
+	qc.in = &qi;
+
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 	qui_fnt(&qc, &fnt);
 
@@ -199,11 +201,11 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		if (glfwGetKey(wndw, GLFW_KEY_KP_ADD) == GLFW_PRESS) {
+		if (glfwGetKey(wndw, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
 			V = mul_float44(V, (float44_t){ 2, 0, 0, 0,    0, 2, 0, 0,   0, 0, 2.0, 0,   0, 0, 0, 1});
 		}
 
-		if (glfwGetKey(wndw, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) {
+		if (glfwGetKey(wndw, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
 			V = mul_float44(V, (float44_t){ 0.5, 0, 0, 0,    0, 0.5, 0, 0,   0, 0, 0.5, 0,   0, 0, 0, 1});
 		}
 
@@ -236,6 +238,33 @@ int main(int argc, char *argv[]) {
 		} else {
 			qui_in_rls(&qi, QUI_IN_ESC);
 		}
+		if (glfwGetKey(wndw, GLFW_KEY_ENTER) == GLFW_PRESS) {
+			qui_in_prss(&qi, QUI_IN_RET);
+		} else {
+			qui_in_rls(&qi, QUI_IN_RET);
+		}
+		for (int i = 0; i < 10; ++i) {
+			if (glfwGetKey(wndw, GLFW_KEY_0 + i) == GLFW_PRESS || glfwGetKey(wndw, GLFW_KEY_KP_0 + i) == GLFW_PRESS) {
+			qui_in_prss(&qi, QUI_IN_0 << i);
+			} else {
+				qui_in_rls(&qi, QUI_IN_0 << i);
+			}
+		}
+		if (glfwGetKey(wndw, GLFW_KEY_BACKSPACE) == GLFW_PRESS) {
+			qui_in_prss(&qi, QUI_IN_BCK);
+		} else {
+			qui_in_rls(&qi, QUI_IN_BCK);
+		}
+		if (glfwGetKey(wndw, GLFW_KEY_PERIOD) == GLFW_PRESS) {
+			qui_in_prss(&qi, QUI_IN_DOT);
+		} else {
+			qui_in_rls(&qi, QUI_IN_DOT);
+		}
+		if (glfwGetKey(wndw, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS || glfwGetKey(wndw, GLFW_KEY_MINUS) == GLFW_PRESS) {
+			qui_in_prss(&qi, QUI_IN_MINUS);
+		} else {
+			qui_in_rls(&qi, QUI_IN_MINUS);
+		}
 		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
 			qui_txt_ms ^= 1;
 			printf("%s\n", qui_txt_ms ? "multisample" : "smooth");
@@ -266,7 +295,7 @@ int main(int argc, char *argv[]) {
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 		glDisable(GL_DEPTH_TEST);
 
-		if (qui_man(&qc, &qm, &qi, P, V, &mt, &mq, &ms)) {
+		if (qui_man(&qc, &qm, P, V, &mt, &mq, &ms)) {
 		}
 
 		S = (float44_t){
