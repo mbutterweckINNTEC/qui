@@ -48,7 +48,7 @@ int qui_bttn(char *nm, float44_t M, float3_t clr) {
 
 		float d = qui_ray_pnt_dst(p, r, (float3_t){ 0.f, 0.f, 0.f });
 
-		if (d < 1.f) {
+		if (d < 0.8660254038f) {
 			bg = m_float4(mix_float3(clr, (float3_t){ 0.5f, 0.5f, 0.5f }, 0.5), 1.f);
 
 			if (qui_in.prss & QUI_IN_LMB) {
