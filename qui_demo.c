@@ -316,6 +316,9 @@ int main(int argc, char *argv[]) {
 		if (qui_tggl("\u21f2", &some_flgs, 1, G, (float3_t){ 0.25, 0.5, 1.0 })) {
 		}
 
+		//qui_tip("Haha zaśmiała się pchła!");
+		qui_tip2("Haha zaśmiała się pchła!", "Zjeżdżając okrakiem po brzytwie!");
+
 		qui_mtrx_pop(QUI_MTRX_P);
 
 		S = (float44_t){
