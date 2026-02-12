@@ -2,7 +2,7 @@
 
 int qui_txt_ms = 0;
 
-static int qui_txt(struct qui_ctx *qc, char *a, float44_t M, float4_t c) {
+static int qui_txt(char *a, float44_t M, float4_t c) {
 	int u, stts = 1;
 
 	enum {
@@ -17,20 +17,20 @@ static int qui_txt(struct qui_ctx *qc, char *a, float44_t M, float4_t c) {
 	};
 	float44_t MX;
 
-	if (!qc || !a || *a == '\0')
+	if (!a || *a == '\0')
 		return -1;
 
-	if (!qc->fnt)
+	if (!qui_fnt)
 		return -1;
 
-	if (qc->flgs & QUI_FLGS_AA) {
+	if (qui_flgs & QUI_FLGS_AA) {
 		glBlendFunc(GL_SRC_ALPHA_SATURATE, GL_ONE);
 		glEnable(GL_BLEND);
 		glEnable(GL_POLYGON_SMOOTH);
 	}
 
-	glUseProgram(qc->po);
-	glBindVertexArray(qc->fnt->vao);
+	glUseProgram(qui_shdr_po);
+	glBindVertexArray(qui_fnt->vao);
 
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 
@@ -41,21 +41,21 @@ static int qui_txt(struct qui_ctx *qc, char *a, float44_t M, float4_t c) {
 			continue;
 
 		if (stts & STTS_STRT) {
-			X.m[3][0] = qc->fnt->glph[u].lsb;
+			X.m[3][0] = qui_fnt->glph[u].lsb;
 			stts ^= STTS_STRT;
 		}
 
 		MX = mul_float44(X, M);
-		glUniformMatrix4fv(qc->M, 1, 0, &MX.m[0][0]);
+		glUniformMatrix4fv(qui_shdr_M, 1, 0, &MX.m[0][0]);
 
 		/* michal@todo: it may be good to change it to glMultiDrawElements and index uniform array through drawID */
-		if (qc->fnt->glph[u].en && u != ' ')
-			glDrawElements(GL_TRIANGLES, qc->fnt->glph[u].en, GL_UNSIGNED_INT, (void*)(qc->fnt->glph[u].e0 * sizeof(int)));
+		if (qui_fnt->glph[u].en && u != ' ')
+			glDrawElements(GL_TRIANGLES, qui_fnt->glph[u].en, GL_UNSIGNED_INT, (void*)(qui_fnt->glph[u].e0 * sizeof(int)));
 
-		X.m[3][0] += qc->fnt->glph[u].xadv;
+		X.m[3][0] += qui_fnt->glph[u].xadv;
 	}
 
-	if (qc->flgs & QUI_FLGS_AA) {
+	if (qui_flgs & QUI_FLGS_AA) {
 		glDisable(GL_POLYGON_SMOOTH);
 		glDisable(GL_BLEND);
 	}

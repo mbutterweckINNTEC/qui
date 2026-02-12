@@ -10,17 +10,8 @@
 #include "mathutils.h"
 #include "quaternion.h"
 
-#include "qui_def.h"
-#include "qui_in.h"
-#include "qui_shdr.h"
-#include "qui_ctx.h"
-#include "qui_util.h"
-#include "qui_strm.h"
-#include "qui_fnt.h"
-#include "qui_txt.h"
-#include "qui_ngon.h"
-#include "qui_val.h"
-#include "qui_man.h"
+#define QUI_IMPL
+#include "qui.h"
 
 char *cube_vsh =
 	"#version 440"				"\n"
@@ -106,8 +97,6 @@ int main(int argc, char *argv[]) {
 	quaternion_t q = { 1.0 };
 	float angl = 0.0, ar;
 	double cx, cy, cl;
-	struct qui_ctx qc = {};
-	struct qui_in qi = {};
 	struct qui_man qm = {};
 	static struct qui_fnt fnt = {};
 
@@ -128,9 +117,9 @@ int main(int argc, char *argv[]) {
 
 	glfwSetScrollCallback(wndw, qui_scrll_cb);
 
-	cube_po = shdr_mk(cube_vsh, cube_fsh);
+	cube_po = shdr_bld(cube_vsh, cube_fsh);
 
-	qui_ctx_mk(&qc);
+	qui_mk();
 
 	glCreateBuffers(2, cube_bo);
 	glNamedBufferStorage(cube_bo[0], sizeof(cube_v), cube_v, 0);
@@ -156,10 +145,8 @@ int main(int argc, char *argv[]) {
 
 	qui_fnt_ld(&fnt, "./iosevka.obj");
 
-	qc.in = &qi;
-
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-	qui_fnt(&qc, &fnt);
+	qui_fnt_use(&fnt);
 
 	while(!glfwWindowShouldClose(wndw)) {
 		glfwGetWindowSize(wndw, &w, &h);
@@ -228,42 +215,42 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (glfwGetMouseButton(wndw, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_LMB);
+			qui_in_prss(QUI_IN_LMB);
 		} else {
-			qui_in_rls(&qi, QUI_IN_LMB);
+			qui_in_rls(QUI_IN_LMB);
 		}
 		
 		if (glfwGetKey(wndw, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_ESC);
+			qui_in_prss(QUI_IN_ESC);
 		} else {
-			qui_in_rls(&qi, QUI_IN_ESC);
+			qui_in_rls(QUI_IN_ESC);
 		}
 		if (glfwGetKey(wndw, GLFW_KEY_ENTER) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_RET);
+			qui_in_prss(QUI_IN_RET);
 		} else {
-			qui_in_rls(&qi, QUI_IN_RET);
+			qui_in_rls(QUI_IN_RET);
 		}
 		for (int i = 0; i < 10; ++i) {
 			if (glfwGetKey(wndw, GLFW_KEY_0 + i) == GLFW_PRESS || glfwGetKey(wndw, GLFW_KEY_KP_0 + i) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_0 << i);
+			qui_in_prss(QUI_IN_0 << i);
 			} else {
-				qui_in_rls(&qi, QUI_IN_0 << i);
+				qui_in_rls(QUI_IN_0 << i);
 			}
 		}
 		if (glfwGetKey(wndw, GLFW_KEY_BACKSPACE) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_BCK);
+			qui_in_prss(QUI_IN_BCK);
 		} else {
-			qui_in_rls(&qi, QUI_IN_BCK);
+			qui_in_rls(QUI_IN_BCK);
 		}
 		if (glfwGetKey(wndw, GLFW_KEY_PERIOD) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_DOT);
+			qui_in_prss(QUI_IN_DOT);
 		} else {
-			qui_in_rls(&qi, QUI_IN_DOT);
+			qui_in_rls(QUI_IN_DOT);
 		}
 		if (glfwGetKey(wndw, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS || glfwGetKey(wndw, GLFW_KEY_MINUS) == GLFW_PRESS) {
-			qui_in_prss(&qi, QUI_IN_MINUS);
+			qui_in_prss(QUI_IN_MINUS);
 		} else {
-			qui_in_rls(&qi, QUI_IN_MINUS);
+			qui_in_rls(QUI_IN_MINUS);
 		}
 		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
 			qui_txt_ms ^= 1;
@@ -273,11 +260,11 @@ int main(int argc, char *argv[]) {
 		{
 			double x = 0.0, y = 0.0;
 			glfwGetCursorPos(wndw, &x, &y);
-			qui_in_mv(&qi, (float2_t){ (x / (double)w * 2.0 - 1.0), 1.0 - 2.0 * y / (double)h });
+			qui_in_mv((float2_t){ (x / (double)w * 2.0 - 1.0), 1.0 - 2.0 * y / (double)h });
 		}
 
 		if (qui_scrll) {
-			qui_in_scrll(&qi, qui_scrll);
+			qui_in_scrll(qui_scrll);
 			qui_scrll = 0.0;
 		}
 
@@ -295,7 +282,7 @@ int main(int argc, char *argv[]) {
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 		glDisable(GL_DEPTH_TEST);
 
-		if (qui_man(&qc, &qm, P, V, &mt, &mq, &ms)) {
+		if (qui_man(&qm, P, V, &mt, &mq, &ms)) {
 		}
 
 		S = (float44_t){
@@ -315,20 +302,21 @@ int main(int argc, char *argv[]) {
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
 
-		//qui_txt(&qc, "ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+		//qui_txt("ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
 
-//		qui_ngon(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
-//		qui_ngon_strk(&qc, 5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});
+//		qui_ngon(5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
+//		qui_ngon_strk(5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});
 
 		glfwSwapBuffers(wndw);
 		glfwWaitEventsTimeout(1.0 / 30.0);
 
-		qui_in_nxt(&qi);
+		qui_in_nxt();
 
 
 		angl += 0.005;
 	}
 
+	qui_rm();
 	glfwTerminate();
 	return 0;
 }

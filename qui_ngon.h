@@ -1,14 +1,14 @@
-int qui_ngon(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
+int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
 	float2_t *v;
 	int s = n * sizeof(float2_t);
 	int b;
 
-	if (!qc || !p || n < 3)
+	if (!p || n < 3)
 		return -1;
 
 
 	/* upload */
-	v = qui_strm_map(qc->strm_vbo, &qc->strm_n, s, &b);
+	v = qui_strm_map(s, &b);
 
 	if (NULL == v) {
 		return -1;
@@ -18,12 +18,12 @@ int qui_ngon(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
 
 	memcpy(v, p, s);
 
-	glUnmapNamedBuffer(qc->strm_vbo);
+	glUnmapNamedBuffer(qui_strm_vbo);
 
 	/* draw setup */
-	glUseProgram(qc->po);
-	glUniformMatrix4fv(qc->M, 1, 0, &M.m[0][0]);
-	glBindVertexArray(qc->strm_vao);
+	glUseProgram(qui_shdr_po);
+	glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
+	glBindVertexArray(qui_strm_vao);
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 
 	glEnable(GL_STENCIL_TEST);
@@ -51,16 +51,16 @@ int qui_ngon(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
 	return 0;    
 }
 
-int qui_ngon_strk(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t c) {
+int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
 	float2_t *v;
 	int s = n * sizeof(float2_t);
 	int b;
 
-	if (!qc || !p || n < 3)
+	if (!p || n < 3)
 		return -1;
 
 	/* upload */
-	v = qui_strm_map(qc->strm_vbo, &qc->strm_n, s, &b);
+	v = qui_strm_map(s, &b);
 
 	if (NULL == v) {
 		return -1;
@@ -70,12 +70,12 @@ int qui_ngon_strk(struct qui_ctx *qc, int n, float2_t p[], float44_t M, float4_t
 
 	memcpy(v, p, s);
 
-	glUnmapNamedBuffer(qc->strm_vbo);
+	glUnmapNamedBuffer(qui_strm_vbo);
 
 	/* draw setup */
-	glUseProgram(qc->po);
-	glUniformMatrix4fv(qc->M, 1, 0, &M.m[0][0]);
-	glBindVertexArray(qc->strm_vao);
+	glUseProgram(qui_shdr_po);
+	glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
+	glBindVertexArray(qui_strm_vao);
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 
 	glDrawArrays(GL_LINE_LOOP, b, n);

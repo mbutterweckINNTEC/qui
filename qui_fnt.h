@@ -14,10 +14,18 @@ struct qui_fnt {
 	} glph[QUI_FNT_MX];	/* michal@todo: we can reduce size by making it hashtable */
 };
 
-static int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */);
-static int qui_fnt(struct qui_ctx *qs, struct qui_fnt *fnt);
+int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */);
+int qui_fnt_use(struct qui_fnt *fnt);
 
-static int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */) {
+/* PRIV */
+
+extern struct qui_fnt *qui_fnt;	/* current */
+
+#ifdef QUI_IMPL
+
+struct qui_fnt *qui_fnt;
+
+int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */) {
 	char ln[4096];
 	FILE *f;
 	float *v = NULL;
@@ -145,10 +153,10 @@ static int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */) {
 }
 
 
-static int qui_fnt(struct qui_ctx *qc, struct qui_fnt *fnt) {
-	if (qc) {
-		qc->fnt = fnt;
-		return 0;
-	}
-	return -1;
+int qui_fnt_use(struct qui_fnt *fnt) {
+	qui_fnt = fnt;
+
+	return 0;
 }
+
+#endif /* QUI_IMPL */

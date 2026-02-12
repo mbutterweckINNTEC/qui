@@ -9,8 +9,8 @@ enum {
 	QUI_VAL_RET_SET
 };
 
-static int qui_val_i(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs);
-static int qui_val_f(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs);
+static int qui_val_i(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs);
+static int qui_val_f(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs);
 
 /* Implementation */
 
@@ -44,7 +44,7 @@ static float2_t qui_val_val_ngon[] = {
 static float const qui_val_scl = 0.03125;
 static float2_t const qui_val_mv = {0.035 / 0.0625 * qui_val_scl, 0.02 / 0.0625 * qui_val_scl };
 
-static int qui_val_drw(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, char *val) {
+static int qui_val_drw(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, char *val) {
 	float4_t bg = m_float4(bg_, 1.f);
 	float4_t fg = m_float4(mix_float3(bg_, (float3_t){1,1,1}, 0.75), 1.f);
 	float4_t fgv = m_float4(mix_float3(bg_, (float3_t){0,0,0}, 0.75), 1.f);
@@ -88,28 +88,28 @@ static int qui_val_drw(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg
 		PVT
 	);
 
-	qui_ngon(qc, 6, qui_val_nm_ngon, PVM, bg);
-	qui_txt(qc, nm, PVT, fg);
-	qui_ngon(qc, 6, qui_val_val_ngon, PVM, bg);
-	qui_txt(qc, val, PVT2, fgv);
-	qui_ngon(qc, 6, qui_val_unt_ngon, PVM, bg);
-	qui_txt(qc, unt, PVT3, fg);
+	qui_ngon(6, qui_val_nm_ngon, PVM, bg);
+	qui_txt(nm, PVT, fg);
+	qui_ngon(6, qui_val_val_ngon, PVM, bg);
+	qui_txt(val, PVT2, fgv);
+	qui_ngon(6, qui_val_unt_ngon, PVM, bg);
+	qui_txt(unt, PVT3, fg);
 
 	return 0;
 }
 
-static int qui_val_i(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs) {
+static int qui_val_i(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs) {
 	char sval[64];
 	sprintf(sval, "%4d", *val);
-	qui_val_drw(qc, PV, p, bg_, nm, unt, sval);
+	qui_val_drw(PV, p, bg_, nm, unt, sval);
 
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
 
-	if (qc->in->rls & QUI_IN_RET)
+	if (qui_in.rls & QUI_IN_RET)
 		return QUI_VAL_RET_SET;
 
-	if (qc->in->rls & QUI_IN_BCK) {
+	if (qui_in.rls & QUI_IN_BCK) {
 		sprintf(sval, "%d", *val);
 		int sl = strlen(sval);
 
@@ -127,14 +127,14 @@ static int qui_val_i(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_,
 		}
 	}
 
-	if (qc->in->rls & QUI_IN_NUM) {
+	if (qui_in.rls & QUI_IN_NUM) {
 		memset(sval, 0, 64);
 		if (*val && (flgs & QUI_VAL_FLGS_RST) == 0) {
 			sprintf(sval, "%d", *val);
 		}
 		int sl = strlen(sval);
 
-		switch (qc->in->rls & QUI_IN_NUM) {
+		switch (qui_in.rls & QUI_IN_NUM) {
 		case QUI_IN_0: sval[sl] = '0'; break;
 		case QUI_IN_1: sval[sl] = '1'; break;
 		case QUI_IN_2: sval[sl] = '2'; break;
@@ -151,7 +151,7 @@ static int qui_val_i(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_,
 			return QUI_VAL_RET_ED;
 	}
 
-	if (qc->in->rls & QUI_IN_MINUS) {
+	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
 		return QUI_VAL_RET_ED;
 	}
@@ -203,16 +203,16 @@ void qui_val_f2a(char *dst, float f) {
 		dst[l-4] = '\0';
 }
 
-static int qui_val_f(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs) {
+static int qui_val_f(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs) {
 	char sval[64];
 
 	qui_val_f2a(sval, *val);
-	qui_val_drw(qc, PV, p, bg_, nm, unt, sval);
+	qui_val_drw(PV, p, bg_, nm, unt, sval);
 
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
 
-	if (qc->in->rls & QUI_IN_RET) {
+	if (qui_in.rls & QUI_IN_RET) {
 		union {
 			float f;
 			unsigned b;
@@ -224,7 +224,7 @@ static int qui_val_f(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_,
 		return QUI_VAL_RET_SET;
 	}
 
-	if (qc->in->rls & QUI_IN_BCK) {
+	if (qui_in.rls & QUI_IN_BCK) {
 		int sl = strlen(sval);
 
 		if (sl) {
@@ -261,13 +261,13 @@ static int qui_val_f(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_,
 		}
 	}
 
-	if (qc->in->rls & (QUI_IN_NUM | QUI_IN_DOT)) {
+	if (qui_in.rls & (QUI_IN_NUM | QUI_IN_DOT)) {
 		if (flgs & QUI_VAL_FLGS_RST || *val ==  0) {
 			memset(sval, 0, 64);
 		}
 		int sl = strlen(sval);
 
-		switch (qc->in->rls & (QUI_IN_NUM | QUI_IN_DOT)) {
+		switch (qui_in.rls & (QUI_IN_NUM | QUI_IN_DOT)) {
 		case QUI_IN_0: sval[sl++] = '0'; break;
 		case QUI_IN_1: sval[sl++] = '1'; break;
 		case QUI_IN_2: sval[sl++] = '2'; break;
@@ -314,7 +314,7 @@ static int qui_val_f(struct qui_ctx *qc, float44_t PV, float2_t p, float3_t bg_,
 		return QUI_VAL_RET_ED;
 	}
 
-	if (qc->in->rls & QUI_IN_MINUS) {
+	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
 		return QUI_VAL_RET_ED;
 	}

@@ -12,17 +12,25 @@ struct qui_man {
 };
 
 enum {
-	QUI_MAN_MOD_MOUSE,
-	QUI_MAN_MOD_KEY
-};
-
-enum {
 	QUI_MAN_NIL,
 	QUI_MAN_ACT,
 	QUI_MAN_SET
 };
 
-int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms);
+
+int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms);
+
+int qui_man_mk();
+int qui_man_rm();
+
+#ifdef QUI_IMPL
+
+int qui_man_vbo, qui_man_vao;
+
+enum {
+	QUI_MAN_MOD_MOUSE,
+	QUI_MAN_MOD_KEY
+};
 
 /* IMPLEMENTATION */
 
@@ -41,19 +49,16 @@ enum {
 	QUI_MAN_STTS_SCL		/* only uniform scalling */
 };
 
-int qui_man_ctx_mk(int *bo, int *vao) {
-	if (NULL == bo || NULL == vao)
-		return -1;
-
+int qui_man_mk() {
 	/* visual objects */
-	glCreateBuffers(1, bo);
+	glCreateBuffers(1, &qui_man_vbo);
 
-	if (!*bo)
+	if (!qui_man_vbo)
 		goto ouch;
 
-	glNamedBufferStorage(*bo, QUI_MAN_SZ, NULL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
+	glNamedBufferStorage(qui_man_vbo, QUI_MAN_SZ, NULL, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
 
-	float3_t *v = glMapNamedBufferRange(*bo, 0, QUI_MAN_SZ, GL_MAP_WRITE_BIT);
+	float3_t *v = glMapNamedBufferRange(qui_man_vbo, 0, QUI_MAN_SZ, GL_MAP_WRITE_BIT);
 
 	if (!v)
 		goto ouch;
@@ -136,15 +141,15 @@ int qui_man_ctx_mk(int *bo, int *vao) {
 	*v++ = QUI_MAN_S_CLR;
 
 
-	glUnmapNamedBuffer(*bo);
+	glUnmapNamedBuffer(qui_man_vbo);
 
-	glGenVertexArrays(1, vao);
+	glGenVertexArrays(1, &qui_man_vao);
 
-	if (!*vao)
+	if (!qui_man_vao)
 		goto ouch;
 
-	glBindVertexArray(*vao);
-	glBindBuffer(GL_ARRAY_BUFFER, *bo);
+	glBindVertexArray(qui_man_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, qui_man_vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 24, 0);
 	glEnableVertexAttribArray(0); 
 	glVertexAttribPointer(1, 3, GL_FLOAT, 0, 24, (char*)12);
@@ -153,13 +158,19 @@ int qui_man_ctx_mk(int *bo, int *vao) {
 
 	return 0;
 ouch:
-	if (*bo)
-		glDeleteBuffers(1, bo);
-
-	if (*vao)
-		glDeleteVertexArrays(1, vao);
+	qui_man_rm();
 
 	return -1;
+}
+
+int qui_man_rm() {
+	if (qui_man_vbo)
+		glDeleteBuffers(1, &qui_man_vbo);
+
+	if (qui_man_vao)
+		glDeleteVertexArrays(1, &qui_man_vao);
+
+	return 0;
 }
 
 enum {
@@ -198,7 +209,7 @@ enum {
 
 #define QUI_MAN_DRW_PASS_N 4
 
-int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int op[], int flgs) {
+int qui_man_drw(float44_t P, float44_t V, float44_t W, int op[], int flgs) {
 	static int const sv_def[] = {
 		/* x axis */ 0,
 		/* y axis */ QUI_MAN_PLN_X_N,
@@ -244,9 +255,6 @@ int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int o
 
 	float44_t M = mul_float44(V, P);
 
-	if (!qc)
-		return -1;
-
 	if (op) {
 		for (int i = 0; op[i]; ++i) {
 			switch (op[i++]) {
@@ -281,19 +289,19 @@ int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int o
 	glBlendFunc(GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR);
 	glBlendColor(0.75, 0.75, 0.75, 0.75);
 
-	glUseProgram(qc->po);
-	glBindVertexArray(qc->man_vao);
+	glUseProgram(qui_shdr_po);
+	glBindVertexArray(qui_man_vao);
 
 	if (pass & 3 && lnwdth)
 		glLineWidth(lnwdth);
 
 	if (pass & 1) {
-		glUniformMatrix4fv(qc->M, 1, 0, &M.m[0][0]);
+		glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
 		glMultiDrawArrays(GL_LINE_STRIP, sv[0], nv[0], iv[0]);
 	}
 
 	if (pass & 2) {
-		glUniformMatrix4fv(qc->M, 1, 0, &W.m[0][0]);
+		glUniformMatrix4fv(qui_shdr_M, 1, 0, &W.m[0][0]);
 		glMultiDrawArrays(GL_LINE_STRIP, sv[1], nv[1], iv[1]);
 	}
 
@@ -312,7 +320,7 @@ int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int o
 
 			M = mul_float44(mul_float44(quaternion_to_rotation_matrix(q), V), P);
 		}
-		glUniformMatrix4fv(qc->M, 1, 0, &M.m[0][0]);
+		glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
 		glMultiDrawArrays(GL_TRIANGLE_FAN, sv[2], nv[2], iv[2]);
 	}
 
@@ -323,7 +331,7 @@ int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int o
 		} else {
 			M = W;
 		}
-		glUniformMatrix4fv(qc->M, 1, 0, &M.m[0][0]);
+		glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
 		glMultiDrawArrays(GL_TRIANGLE_FAN, sv[3], nv[3], iv[3]);
 	}
 
@@ -334,7 +342,7 @@ int qui_man_drw(struct qui_ctx *qc, float44_t P, float44_t V, float44_t W, int o
 
 #define QUI_MAN_EPS 0.01
 
-int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms) {
+int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms) {
 	int rstts = qm->stts ? QUI_MAN_ACT :QUI_MAN_NIL;
 
 	float3_t mt_ = *mt;
@@ -353,7 +361,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 	float44_t PV = mul_float44(V, P);
 	float detPV = det_float44(PV);
 	float44_t iPV = invert_float44(PV, detPV);
-	float3_t p = float3_float4(cotransform_float44(iPV, (float4_t){ qc->in->p.x, qc->in->p.y, 0.f, 1.f }));
+	float3_t p = float3_float4(cotransform_float44(iPV, (float4_t){ qui_in.p.x, qui_in.p.y, 0.f, 1.f }));
 	float3_t d = normal_float3(m_float3(cotransform_float44(iPV, (float4_t){ 0.f, 0.f, 1.f, 0.f })));
 	float fV = frobenius_float33(float33_float44(V)) / sqrt(3);
 	float44_t W = {
@@ -365,7 +373,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 	float44_t PW = (mul_float44(W, P));
 	float detPW = det_float44(PW);
 	float44_t iPW = invert_float44(PW, detPW);
-	float2_t pv = m_float2(float3_float4(cotransform_float44(iPW, (float4_t){ qc->in->p.x, qc->in->p.y, 0.f, 1.f })));
+	float2_t pv = m_float2(float3_float4(cotransform_float44(iPW, (float4_t){ qui_in.p.x, qui_in.p.y, 0.f, 1.f })));
 	float44_t U = {
 		1.f, 0.f, 0.f, 0.f,
 		0.f, 1.f, 0.f, 0.f,
@@ -439,7 +447,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 		}
 
 		if (l * fV < QUI_MAN_EPS) {
-			if (qc->in->rls & QUI_IN_LMB) {
+			if (qui_in.rls & QUI_IN_LMB) {
 				qm->phi = phi;
 				qm->stts = stts;
 				qm->q = *mq;
@@ -492,12 +500,12 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 				break;
 			};
 
-			if (qc->in->rls & QUI_IN_LMB) {
+			if (qui_in.rls & QUI_IN_LMB) {
 				rstts = QUI_MAN_SET;
 			}
 		}
 
-		if (qc->in->rls & QUI_IN_ESC) {
+		if (qui_in.rls & QUI_IN_ESC) {
 			switch(qm->stts) {
 			case QUI_MAN_STTS_ROT_X:
 			case QUI_MAN_STTS_ROT_Y:
@@ -530,31 +538,31 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 
 	switch(qm->stts) {
 	case QUI_MAN_STTS_MOV_X:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
 		break;
 	case QUI_MAN_STTS_MOV_Y:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
 		break;
 	case QUI_MAN_STTS_MOV_Z:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
 		break;
 	case QUI_MAN_STTS_NIL:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_CRCL_FRM);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_CRCL_FRM);
 		break;
 	case QUI_MAN_STTS_ROT_X:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X | QUI_MAN_FLGS_PIE_X);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X | QUI_MAN_FLGS_PIE_X);
 		break;
 	case QUI_MAN_STTS_ROT_Y:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y | QUI_MAN_FLGS_PIE_Y);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y | QUI_MAN_FLGS_PIE_Y);
 		break;
 	case QUI_MAN_STTS_ROT_Z:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z | QUI_MAN_FLGS_PIE_Z);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z | QUI_MAN_FLGS_PIE_Z);
 		break;
 	case QUI_MAN_STTS_ROT_V:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V | QUI_MAN_FLGS_PIE_V);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V | QUI_MAN_FLGS_PIE_V);
 		break;
 		case QUI_MAN_STTS_SCL:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
 		break;
 	};
 
@@ -562,28 +570,28 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 	case QUI_MAN_STTS_NIL:
 		break;
 	case QUI_MAN_STTS_MOV_X:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
 		break;
 	case QUI_MAN_STTS_MOV_Y:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
 		break;
 	case QUI_MAN_STTS_MOV_Z:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
 		break;
 	case QUI_MAN_STTS_ROT_X:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X);
 		break;
 	case QUI_MAN_STTS_ROT_Y:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Y);
 		break;
 	case QUI_MAN_STTS_ROT_Z:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_Z);
 		break;
 	case QUI_MAN_STTS_ROT_V:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V);
 		break;
 		case QUI_MAN_STTS_SCL:
-		qui_man_drw(qc, P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 4, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
 		break;
 	};
 
@@ -642,7 +650,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 	case QUI_MAN_STTS_ROT_Y:
 	case QUI_MAN_STTS_ROT_Z:
 	case QUI_MAN_STTS_ROT_V:
-		if (qui_val_i(qc, PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dphi, val_flgs)) {
+		if (qui_val_i(PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dphi, val_flgs)) {
 			while (qm->dphi < 0) qm->dphi += 360;
 			while (360 <= qm->dphi) qm->dphi -= 360;
 			qm->mod = QUI_MAN_MOD_KEY;
@@ -651,7 +659,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 	case QUI_MAN_STTS_MOV_X:
 	case QUI_MAN_STTS_MOV_Y:
 	case QUI_MAN_STTS_MOV_Z:
-		if (qui_val_f(qc, PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dt, val_flgs)) {
+		if (qui_val_f(PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dt, val_flgs)) {
 			qm->mod = QUI_MAN_MOD_KEY;
 		}
 		break;
@@ -659,7 +667,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 		if (qm->mod == QUI_MAN_MOD_MOUSE) {
 			qm->ds = *ms * ds / qm->s;
 		}
-		switch (qui_val_f(qc, PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->ds, val_flgs)) {
+		switch (qui_val_f(PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->ds, val_flgs)) {
 		case QUI_VAL_RET_NIL: break;
 		case QUI_VAL_RET_SET:
 			if (qm->ds < 0.001)
@@ -702,7 +710,7 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 		break;
 	};
 
-	if (qc->in->rls & QUI_IN_RET) {
+	if (qui_in.rls & QUI_IN_RET) {
 		rstts = QUI_MAN_SET;
 	}
 
@@ -716,3 +724,4 @@ int qui_man(struct qui_ctx *qc, struct qui_man *qm, float44_t P, float44_t V, fl
 	return rstts;
 }
 
+#endif /* QUI_IMPL */

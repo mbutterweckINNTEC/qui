@@ -1,4 +1,13 @@
-static int shdr_mk(char  const *vshsrc, char  const *fshsrc) {
+extern int qui_shdr_po, qui_shdr_M;
+
+int qui_shdr_mk();
+int qui_shdr_rm();
+
+#ifdef QUI_IMPL
+
+int qui_shdr_po, qui_shdr_M;
+
+static int shdr_bld(char  const *vshsrc, char  const *fshsrc) {
         char log[4096];
         int po = 0, vso = 0, fso = 0, stts = 0;
 
@@ -84,3 +93,28 @@ char *qui_fsh =
 	"	K = k;"				"\n"
 	"}"					"\n";
 
+
+int qui_shdr_mk() {
+	qui_shdr_po = shdr_bld(qui_vsh, qui_fsh);
+
+	if (!qui_shdr_po)
+		return -1;
+
+	qui_shdr_M = glGetUniformLocation(qui_shdr_po, "M");
+
+	if (qui_shdr_M == -1)
+		return -1;
+
+	return 0;
+}
+
+int qui_shdr_rm() {
+	glDeleteProgram(qui_shdr_po);
+
+	qui_shdr_po = 0;
+	qui_shdr_M = 0;
+
+	return 0;
+}
+
+#endif

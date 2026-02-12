@@ -36,58 +36,51 @@ struct qui_in {
 	float s;
 };
 
-static int qui_in_prss(struct qui_in *qi, int bttn);
-static int qui_in_rls(struct qui_in *qin, int bttn);
-static int qui_in_mv(struct qui_in *qi, float2_t p);
-static int qui_in_scrll(struct qui_in *qi, float scrll);
-static int qui_in_nxt(struct qui_in *qi);
+extern struct qui_in qui_in;
 
-static int qui_in_prss(struct qui_in *qi, int bttn) {
-	if (!qi)
-		return -1;
+int qui_in_prss(int bttn);
+int qui_in_rls(int bttn);
+int qui_in_mv(float2_t p);
+int qui_in_scrll(float scrll);
+int qui_in_nxt();
 
-	qi->prss |= bttn;
-	qi->rls &=~ bttn;
+#ifdef QUI_IMPL
 
-	return 0;
-}
+struct qui_in qui_in;
 
-static int qui_in_rls(struct qui_in *qi, int bttn) {
-	if (!qi)
-		return -1;
-
-	qi->rls |= qi->prss & bttn;
-	qi->prss &=~ bttn;
+int qui_in_prss(int bttn) {
+	qui_in.prss |= bttn;
+	qui_in.rls &=~ bttn;
 
 	return 0;
 }
 
-static int qui_in_mv(struct qui_in *qi, float2_t p) {
-	if (!qi)
-		return -1;
-
-	qi->d = add_float2(qi->d, sub_float2(p, qi->p));
-	qi->p = p;
+int qui_in_rls(int bttn) {
+	qui_in.rls |= qui_in.prss & bttn;
+	qui_in.prss &=~ bttn;
 
 	return 0;
 }
 
-static int qui_in_scrll(struct qui_in *qi, float scrll) {
-	if (!qi)
-		return -1;
-
-	qi->s += scrll;
+int qui_in_mv(float2_t p) {
+	qui_in.d = add_float2(qui_in.d, sub_float2(p, qui_in.p));
+	qui_in.p = p;
 
 	return 0;
 }
 
-static int qui_in_nxt(struct qui_in *qi) {
-	if (!qi)
-		return -1;
-
-	qi->rls = 0;
-	qi->d = (float2_t){ 0.f, 0.f };
-	qi->s = 0.f;
+int qui_in_scrll(float scrll) {
+	qui_in.s += scrll;
 
 	return 0;
 }
+
+int qui_in_nxt() {
+	qui_in.rls = 0;
+	qui_in.d = (float2_t){ 0.f, 0.f };
+	qui_in.s = 0.f;
+
+	return 0;
+}
+
+#endif
