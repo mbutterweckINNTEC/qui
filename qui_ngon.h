@@ -3,6 +3,10 @@ int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
 	int s = n * sizeof(float2_t);
 	int b;
 
+	float44_t P = qui_mtrx_top(QUI_MTRX_P);
+	float44_t V = qui_mtrx_top(QUI_MTRX_V);
+	float44_t PVM = mul_float44(M, mul_float44(V, P));
+
 	if (!p || n < 3)
 		return -1;
 
@@ -22,7 +26,7 @@ int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
 
 	/* draw setup */
 	glUseProgram(qui_shdr_po);
-	glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
+	glUniformMatrix4fv(qui_shdr_M, 1, 0, &PVM.m[0][0]);
 	glBindVertexArray(qui_strm_vao);
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 
@@ -56,6 +60,10 @@ int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
 	int s = n * sizeof(float2_t);
 	int b;
 
+	float44_t P = qui_mtrx_top(QUI_MTRX_P);
+	float44_t V = qui_mtrx_top(QUI_MTRX_V);
+	float44_t PVM = mul_float44(M, mul_float44(V, P));
+
 	if (!p || n < 3)
 		return -1;
 
@@ -74,7 +82,7 @@ int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
 
 	/* draw setup */
 	glUseProgram(qui_shdr_po);
-	glUniformMatrix4fv(qui_shdr_M, 1, 0, &M.m[0][0]);
+	glUniformMatrix4fv(qui_shdr_M, 1, 0, &PVM.m[0][0]);
 	glBindVertexArray(qui_strm_vao);
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 

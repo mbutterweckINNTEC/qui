@@ -18,7 +18,7 @@ enum {
 };
 
 
-int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms);
+int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms);
 
 int qui_man_mk();
 int qui_man_rm();
@@ -342,7 +342,10 @@ int qui_man_drw(float44_t P, float44_t V, float44_t W, int op[], int flgs) {
 
 #define QUI_MAN_EPS 0.01
 
-int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaternion_t *mq, float *ms) {
+int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
+	float44_t P = qui_mtrx_top(QUI_MTRX_P);
+	float44_t V = qui_mtrx_top(QUI_MTRX_V);
+
 	int rstts = qm->stts ? QUI_MAN_ACT :QUI_MAN_NIL;
 
 	float3_t mt_ = *mt;
@@ -639,9 +642,9 @@ int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaterni
 		break;
 	};
 
-	float44_t PU = mul_float44(U, P);
-
 	int val_flgs = qm->mod == QUI_MAN_MOD_MOUSE ? QUI_VAL_FLGS_RST : 0;
+
+	qui_mtrx_psh(QUI_MTRX_V, U);
 
 	switch(qm->stts) {
 	case QUI_MAN_STTS_NIL:
@@ -650,7 +653,7 @@ int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaterni
 	case QUI_MAN_STTS_ROT_Y:
 	case QUI_MAN_STTS_ROT_Z:
 	case QUI_MAN_STTS_ROT_V:
-		if (qui_val_i(PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dphi, val_flgs)) {
+		if (qui_val_i((float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dphi, val_flgs)) {
 			while (qm->dphi < 0) qm->dphi += 360;
 			while (360 <= qm->dphi) qm->dphi -= 360;
 			qm->mod = QUI_MAN_MOD_KEY;
@@ -659,7 +662,7 @@ int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaterni
 	case QUI_MAN_STTS_MOV_X:
 	case QUI_MAN_STTS_MOV_Y:
 	case QUI_MAN_STTS_MOV_Z:
-		if (qui_val_f(PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dt, val_flgs)) {
+		if (qui_val_f((float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->dt, val_flgs)) {
 			qm->mod = QUI_MAN_MOD_KEY;
 		}
 		break;
@@ -667,7 +670,7 @@ int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaterni
 		if (qm->mod == QUI_MAN_MOD_MOUSE) {
 			qm->ds = *ms * ds / qm->s;
 		}
-		switch (qui_val_f(PU, (float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->ds, val_flgs)) {
+		switch (qui_val_f((float2_t){-0.75*fV, -0.75*fV}, bg, nm, unt, &qm->ds, val_flgs)) {
 		case QUI_VAL_RET_NIL: break;
 		case QUI_VAL_RET_SET:
 			if (qm->ds < 0.001)
@@ -683,6 +686,8 @@ int qui_man(struct qui_man *qm, float44_t P, float44_t V, float3_t *mt, quaterni
 		};
 		break;
 	};
+
+	qui_mtrx_pop(QUI_MTRX_V);
 
 	switch(qm->stts) {
 	case QUI_MAN_STTS_NIL:

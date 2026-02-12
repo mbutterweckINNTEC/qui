@@ -9,13 +9,16 @@ static int qui_txt(char *a, float44_t M, float4_t c) {
 		STTS_STRT = 0x1
 	};
 
+	float44_t P = qui_mtrx_top(QUI_MTRX_P);
+	float44_t V = qui_mtrx_top(QUI_MTRX_V);
+
 	float44_t X = {
 		1.f, 0.f, 0.f, 0.f,
 		0.f, 1.f, 0.f, 0.f,
 		0.f, 0.f, 1.f, 0.f,
 		0.f, 0.f, 0.f, 1.f
 	};
-	float44_t MX;
+	float44_t PVMX = identity_sc;
 
 	if (!a || *a == '\0')
 		return -1;
@@ -45,8 +48,8 @@ static int qui_txt(char *a, float44_t M, float4_t c) {
 			stts ^= STTS_STRT;
 		}
 
-		MX = mul_float44(X, M);
-		glUniformMatrix4fv(qui_shdr_M, 1, 0, &MX.m[0][0]);
+		PVMX = mul_float44(mul_float44(X, M), mul_float44(V, P));
+		glUniformMatrix4fv(qui_shdr_M, 1, 0, &PVMX.m[0][0]);
 
 		/* michal@todo: it may be good to change it to glMultiDrawElements and index uniform array through drawID */
 		if (qui_fnt->glph[u].en && u != ' ')

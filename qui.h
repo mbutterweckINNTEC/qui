@@ -9,6 +9,7 @@ int qui_rm();
 
 /* LIB */
 
+#include "qui_mtrx.h"
 #include "qui_def.h"
 #include "qui_in.h"
 #include "qui_shdr.h"

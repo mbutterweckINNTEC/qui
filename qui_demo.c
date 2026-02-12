@@ -282,8 +282,14 @@ int main(int argc, char *argv[]) {
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 		glDisable(GL_DEPTH_TEST);
 
-		if (qui_man(&qm, P, V, &mt, &mq, &ms)) {
+		qui_mtrx_psh(QUI_MTRX_P, P);
+		qui_mtrx_psh(QUI_MTRX_V, V);
+
+		if (qui_man(&qm, &mt, &mq, &ms)) {
 		}
+
+		qui_mtrx_pop(QUI_MTRX_P);
+		qui_mtrx_pop(QUI_MTRX_V);
 
 		S = (float44_t){
 			ms, 0.f, 0.f, 0.f,

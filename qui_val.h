@@ -9,8 +9,8 @@ enum {
 	QUI_VAL_RET_SET
 };
 
-static int qui_val_i(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs);
-static int qui_val_f(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs);
+static int qui_val_i(float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs);
+static int qui_val_f(float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs);
 
 /* Implementation */
 
@@ -44,64 +44,59 @@ static float2_t qui_val_val_ngon[] = {
 static float const qui_val_scl = 0.03125;
 static float2_t const qui_val_mv = {0.035 / 0.0625 * qui_val_scl, 0.02 / 0.0625 * qui_val_scl };
 
-static int qui_val_drw(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, char *val) {
+static int qui_val_drw(float2_t p, float3_t bg_, char *nm, char *unt, char *val) {
 	float4_t bg = m_float4(bg_, 1.f);
 	float4_t fg = m_float4(mix_float3(bg_, (float3_t){1,1,1}, 0.75), 1.f);
 	float4_t fgv = m_float4(mix_float3(bg_, (float3_t){0,0,0}, 0.75), 1.f);
 
-	float44_t PVM = mul_float44(
-		(float44_t) {
-			qui_val_scl, 0, 0, 0,
-			0, qui_val_scl, 0, 0,
-			0, 0, 1, 0,
-			p.x-qui_val_scl*5, p.y, 0, 1
-		},
-		PV
-	);
-	float44_t PVT = mul_float44(
-		(float44_t) {
-			qui_val_scl, 0, 0, 0,
-			0, qui_val_scl, 0, 0,
-			0, 0, 1, 0,
-			p.x-qui_val_mv.x-qui_val_scl*5,p.y-qui_val_mv.y, 0, 1
-		},
-		PV
-	);
+	float44_t M = (float44_t) {
+		qui_val_scl, 0, 0, 0,
+		0, qui_val_scl, 0, 0,
+		0, 0, 1, 0,
+		p.x-qui_val_scl*5, p.y, 0, 1
+	};
+	float44_t T = (float44_t) {
+		qui_val_scl, 0, 0, 0,
+		0, qui_val_scl, 0, 0,
+		0, 0, 1, 0,
+		p.x-qui_val_mv.x-qui_val_scl*5,p.y-qui_val_mv.y, 0, 1
+	};
 		
-	float44_t PVT2 = mul_float44(
+	float44_t T2 = mul_float44(
 		(float44_t) {
 			1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
 			2.0+0.1, -1, 0, 1
 		},
-		PVT
+		T
 	);
 
-	float44_t PVT3 = mul_float44(
+	float44_t T3 = mul_float44(
 		(float44_t) {
 			1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
 			5.5+0.1, -2, 0, 1
 		},
-		PVT
+		T
 	);
 
-	qui_ngon(6, qui_val_nm_ngon, PVM, bg);
-	qui_txt(nm, PVT, fg);
-	qui_ngon(6, qui_val_val_ngon, PVM, bg);
-	qui_txt(val, PVT2, fgv);
-	qui_ngon(6, qui_val_unt_ngon, PVM, bg);
-	qui_txt(unt, PVT3, fg);
+	qui_ngon(6, qui_val_nm_ngon, M, bg);
+	qui_txt(nm, T, fg);
+	qui_ngon(6, qui_val_val_ngon, M, bg);
+	qui_txt(val, T2, fgv);
+	qui_ngon(6, qui_val_unt_ngon, M, bg);
+	qui_txt(unt, T3, fg);
 
 	return 0;
 }
 
-static int qui_val_i(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs) {
+static int qui_val_i(float2_t p, float3_t bg_, char *nm, char *unt, int *val, int flgs) {
 	char sval[64];
+
 	sprintf(sval, "%4d", *val);
-	qui_val_drw(PV, p, bg_, nm, unt, sval);
+	qui_val_drw(p, bg_, nm, unt, sval);
 
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
@@ -203,11 +198,11 @@ void qui_val_f2a(char *dst, float f) {
 		dst[l-4] = '\0';
 }
 
-static int qui_val_f(float44_t PV, float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs) {
+static int qui_val_f(float2_t p, float3_t bg_, char *nm, char *unt, float *val, int flgs) {
 	char sval[64];
 
 	qui_val_f2a(sval, *val);
-	qui_val_drw(PV, p, bg_, nm, unt, sval);
+	qui_val_drw(p, bg_, nm, unt, sval);
 
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
