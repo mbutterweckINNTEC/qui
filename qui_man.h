@@ -611,6 +611,7 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		break;
 	case QUI_MAN_STTS_MOV_X:
 		nm = "δx";
+		unt = "mm";
 		bg = QUI_MAN_X_CLR;
 		break;
 	case QUI_MAN_STTS_ROT_Y:
@@ -619,7 +620,8 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		bg = QUI_MAN_Y_CLR;
 		break;
 	case QUI_MAN_STTS_MOV_Y:
-		nm = "→y";
+		nm = "δy";
+		unt = "mm";
 		bg = QUI_MAN_Y_CLR;
 		break;
 	case QUI_MAN_STTS_ROT_Z:
@@ -628,7 +630,8 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		bg = QUI_MAN_Z_CLR;
 		break;
 	case QUI_MAN_STTS_MOV_Z:
-		nm = "→z";
+		nm = "δz";
+		unt = "mm";
 		bg = QUI_MAN_Z_CLR;
 		break;
 	case QUI_MAN_STTS_ROT_V:

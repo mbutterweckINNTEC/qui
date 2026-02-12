@@ -82,7 +82,7 @@ static int qui_val_drw(float44_t M_, float3_t bg_, char *nm, char *unt, char *va
 			1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
-			5.5+0.1, -2, 0, 1
+			6.2, -2, 0, 1
 		},
 		T
 	);
