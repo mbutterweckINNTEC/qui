@@ -19,6 +19,7 @@ int qui_rm();
 #include "qui_txt.h"
 #include "qui_ngon.h"
 #include "qui_bttn.h"
+#include "qui_tggl.h" 
 #include "qui_val.h"
 #include "qui_man.h"
 

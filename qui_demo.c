@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 	qui_fnt_use(&fnt);
 
+	int some_flgs = 0;
+
 	while(!glfwWindowShouldClose(wndw)) {
 		glfwGetWindowSize(wndw, &w, &h);
 	
@@ -302,6 +304,16 @@ int main(int argc, char *argv[]) {
 
 		if (qui_bttn("\u21f2", B, (float3_t){ 0.25, 0.5, 1.0 })) {
 			puts("buja!");
+		}
+
+		float44_t G = (float44_t){
+			1.f, 0.f, 0.f, 0.f,
+			0.f, 1.f, 0.f, 0.f,
+			0.f, 0.f, 1.f, 0.f,
+			-0.6f, -0.8f, 0.f, 1.f
+		};
+
+		if (qui_tggl("\u21f2", &some_flgs, 1, G, (float3_t){ 0.25, 0.5, 1.0 })) {
 		}
 
 		qui_mtrx_pop(QUI_MTRX_P);
