@@ -219,7 +219,11 @@ int main(int argc, char *argv[]) {
 		} else {
 			qui_in_rls(QUI_IN_LMB);
 		}
-		
+		if (glfwGetMouseButton(wndw, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+			qui_in_prss(QUI_IN_RMB);
+		} else {
+			qui_in_rls(QUI_IN_RMB);
+		}	
 		if (glfwGetKey(wndw, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			qui_in_prss(QUI_IN_ESC);
 		} else {
@@ -287,9 +291,20 @@ int main(int argc, char *argv[]) {
 
 		if (qui_man(&qm, &mt, &mq, &ms)) {
 		}
+	
+		float44_t B = (float44_t){
+			1.f, 0.f, 0.f, 0.f,
+			0.f, 1.f, 0.f, 0.f,
+			0.f, 0.f, 1.f, 0.f,
+			0.8f, -0.8f, 0.f, 1.f
+		};
+		qui_mtrx_pop(QUI_MTRX_V);
+
+		if (qui_bttn("\u21f2", B, (float3_t){ 0.25, 0.5, 1.0 })) {
+			puts("buja!");
+		}
 
 		qui_mtrx_pop(QUI_MTRX_P);
-		qui_mtrx_pop(QUI_MTRX_V);
 
 		S = (float44_t){
 			ms, 0.f, 0.f, 0.f,

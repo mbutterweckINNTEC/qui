@@ -44,10 +44,10 @@ static float2_t qui_val_val_ngon[] = {
 	{-0.5f + 1.5 + 0.1f,-0.8660254038f - 0.8660254038f - 0.08660254038f },
 };
 
-static int qui_val_drw(float44_t M_, float3_t bg_, char *nm, char *unt, char *val) {
-	float4_t bg = m_float4(bg_, 1.f);
-	float4_t fg = m_float4(mix_float3(bg_, (float3_t){1,1,1}, 0.75), 1.f);
-	float4_t fgv = m_float4(mix_float3(bg_, (float3_t){0,0,0}, 0.75), 1.f);
+static int qui_val_drw(float44_t M_, float3_t clr, char *nm, char *unt, char *val) {
+	float4_t bg = m_float4(clr, 1.f);
+	float4_t fg = m_float4(mix_float3(clr, (float3_t){1,1,1}, 0.75), 1.f);
+	float4_t fgv = m_float4(mix_float3(clr, (float3_t){0,0,0}, 0.75), 1.f);
 
 	float44_t S = {
 		qui_val_scl, 0, 0, 0,

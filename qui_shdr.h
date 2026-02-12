@@ -117,4 +117,4 @@ int qui_shdr_rm() {
 	return 0;
 }
 
-#endif
+#endif /* QUI_IMPL */

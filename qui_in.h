@@ -20,6 +20,7 @@ enum {
 	QUI_IN_ESC = 0x10000,
 	QUI_IN_BCK = 0x20000,
 	QUI_IN_RET = 0x40000,
+	QUI_IN_RMB = 0x80000,
 
 	QUI_IN_NUM = 0x3ff0,
 
