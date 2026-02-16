@@ -82,6 +82,8 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr) {
 		);
 
 		if (d < 0.8660254038f) {
+			qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
+
 			bg = m_float4(mix_float3(clr, (float3_t){ 0.5f, 0.5f, 0.5f }, 0.5), 1.f);
 
 			if (qui_in.prss & QUI_IN_LMB) {

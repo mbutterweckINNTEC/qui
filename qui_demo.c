@@ -7,6 +7,10 @@
 #include <GLFW/glfw3.h>
 #include <unistd.h>
 
+
+#include <assert.h>
+#include <time.h>
+
 #include "mathutils.h"
 #include "quaternion.h"
 
@@ -291,8 +295,10 @@ int main(int argc, char *argv[]) {
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);
 
+		qui_tip_bgn();
 		if (qui_man(&qm, &mt, &mq, &ms)) {
 		}
+		qui_tip_end("Move/rotate/scale");
 	
 		float44_t B = (float44_t){
 			1.f, 0.f, 0.f, 0.f,
@@ -302,9 +308,11 @@ int main(int argc, char *argv[]) {
 		};
 		qui_mtrx_pop(QUI_MTRX_V);
 
+		qui_tip_bgn();
 		if (qui_bttn("\u21f2", B, (float3_t){ 0.25, 0.5, 1.0 })) {
 			puts("buja!");
 		}
+		qui_tip_end2("\u25f0 Do nothing?", "\u25f3 Don't do anything. [  \u000d  ]");
 
 		float44_t G = (float44_t){
 			1.f, 0.f, 0.f, 0.f,
@@ -313,11 +321,13 @@ int main(int argc, char *argv[]) {
 			-0.6f, -0.8f, 0.f, 1.f
 		};
 
+		qui_tip_bgn();
 		if (qui_tggl("\u21f2", &some_flgs, 1, G, (float3_t){ 0.25, 0.5, 1.0 })) {
 		}
+		qui_tip_end("You need switch!");
 
 		//qui_tip("Haha zaśmiała się pchła!");
-		qui_tip2("Haha zaśmiała się pchła!", "Zjeżdżając okrakiem po brzytwie!");
+	//	qui_tip2("Haha zaśmiała się pchła!", "Zjeżdżając okrakiem po brzytwie!");
 
 		qui_mtrx_pop(QUI_MTRX_P);
 

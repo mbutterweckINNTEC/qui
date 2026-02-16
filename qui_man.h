@@ -450,6 +450,8 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		}
 
 		if (l * fV < QUI_MAN_EPS) {
+			qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
+
 			if (qui_in.rls & QUI_IN_LMB) {
 				qm->phi = phi;
 				qm->stts = stts;
@@ -656,6 +658,8 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		-0.75*fV, -0.75*fV, 0, 1
 	};
 
+	qui_tip_msk = 0;
+
 	switch(qm->stts) {
 	case QUI_MAN_STTS_NIL:
 		break;
@@ -696,6 +700,8 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		};
 		break;
 	};
+
+	qui_tip_msk = ~0;
 
 	qui_mtrx_pop(QUI_MTRX_V);
 

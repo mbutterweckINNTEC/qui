@@ -106,6 +106,8 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
 
+	qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
+
 	if (qui_in.rls & QUI_IN_RET)
 		return QUI_VAL_RET_SET;
 
@@ -211,6 +213,8 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
+
+	qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
 
 	if (qui_in.rls & QUI_IN_RET) {
 		union {
