@@ -23,10 +23,14 @@ int qui_rm();
 #include "qui_tggl.h"
 #include "qui_val.h"
 #include "qui_man.h"
+#include "qui_aim.h"
 
 #ifdef QUI_IMPL
 
 int qui_flgs;
+
+int qui_aim_mk();
+int qui_aim_rm();
 
 int qui_strm_mk();
 int qui_strm_rm();
@@ -37,6 +41,7 @@ int qui_man_rm();
 int qui_mk() {
 	int r = 0;
 
+	r |= qui_aim_mk();
 	r |= qui_shdr_mk();
 	r |= qui_man_mk();
 	r |= qui_strm_mk();
@@ -48,6 +53,7 @@ int qui_mk() {
 int qui_rm() {
 	int r = 0;
 
+	r |= qui_aim_rm();
 	r |= qui_shdr_rm();
 	r |= qui_man_rm();
 	r |= qui_strm_rm();

@@ -154,6 +154,11 @@ int main(int argc, char *argv[]) {
 
 	int some_flgs = 0;
 
+	float3_t ap = { 0.5, 0.5, 0.5 };
+	float3_t as = { 1.0, 0.0, 0.0 };
+	float3_t at = { 0.0, 1.0, 0.0 };
+	float3_t an = { 0.0, 0.0, 1.0 };
+
 	while(!glfwWindowShouldClose(wndw)) {
 		glfwGetWindowSize(wndw, &w, &h);
 	
@@ -262,6 +267,11 @@ int main(int argc, char *argv[]) {
 		} else {
 			qui_in_rls(QUI_IN_MINUS);
 		}
+		if (glfwGetKey(wndw, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) {
+			qui_in_prss(QUI_IN_RALT);
+		} else {
+			qui_in_rls(QUI_IN_RALT);
+		}
 		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
 			qui_txt_ms ^= 1;
 			printf("%s\n", qui_txt_ms ? "multisample" : "smooth");
@@ -281,7 +291,7 @@ int main(int argc, char *argv[]) {
 
 		P.m[0][0] = 1.f / ar;
 	//	P.m[3][2] = 0.5f;	/* adding perspective */
-
+		P.m[2][2] = 0.25;
 		PV = mul_float44(V, P);
 
 		glEnable(GL_DEPTH_TEST);
@@ -299,16 +309,18 @@ int main(int argc, char *argv[]) {
 		if (qui_man(&qm, &mt, &mq, &ms)) {
 		}
 		qui_tip_end("Move/rotate/scale");
+
+		qui_aim(&ap, &as, &at, &an, 3);
 	
+		qui_mtrx_pop(QUI_MTRX_V);
+
+		qui_tip_bgn();
 		float44_t B = (float44_t){
 			1.f, 0.f, 0.f, 0.f,
 			0.f, 1.f, 0.f, 0.f,
 			0.f, 0.f, 1.f, 0.f,
 			0.8f, -0.8f, 0.f, 1.f
 		};
-		qui_mtrx_pop(QUI_MTRX_V);
-
-		qui_tip_bgn();
 		if (qui_bttn("\u21f2", B, (float3_t){ 0.25, 0.5, 1.0 })) {
 			puts("buja!");
 		}
