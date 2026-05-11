@@ -365,7 +365,7 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 	float detPV = det_float44(PV);
 	float44_t iPV = invert_float44(PV, detPV);
 	float3_t p = float3_float4(cotransform_float44(iPV, (float4_t){ qui_in.p.x, qui_in.p.y, 0.f, 1.f }));
-	float3_t d = normal_float3(m_float3(cotransform_float44(iPV, (float4_t){ 0.f, 0.f, 1.f, 0.f })));
+	float3_t d = normal_float3(m_float3(cotransform_float44(iPV, (float4_t){ 0.f, 0.f, -1.f, 0.f })));
 	float fV = frobenius_float33(float33_float44(V)) / sqrt(3);
 	float44_t W = {
 		fV, 0.f, 0.f, 0.f,
