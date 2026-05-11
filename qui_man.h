@@ -390,8 +390,6 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 	int hvrd = 0;
 
 
-//	qm->dt = qm->t0;
-
 	/* input handling */
 	if (QUI_MAN_STTS_NIL == qm->stts) {
 		float l, nl;
@@ -454,10 +452,13 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 
 			if (qui_in.rls & QUI_IN_LMB) {
 				qm->phi = phi;
+				qm->dphi = 0;
 				qm->stts = stts;
 				qm->q = *mq;
 				qm->t = *mt;
+				qm->dt = qm->t0;
 				qm->s = *ms;
+				qm->ds = 1.f;
 				rstts = QUI_MAN_ACT;
 			} else {
 				hvrd = stts;
