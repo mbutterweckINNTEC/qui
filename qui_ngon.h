@@ -88,4 +88,5 @@ int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
 
 	glDrawArrays(GL_LINE_LOOP, b, n);
 
+	return 0;
 }
