@@ -265,6 +265,12 @@ int qui_man_drw(float44_t P, float44_t V, float44_t W, int op[], int flgs) {
 		}
 	}
 
+	if (180 < dsc_angl) {
+		float tstrt = dsc_strt;
+		dsc_strt += dsc_angl;
+		dsc_angl = 360 - dsc_angl;
+	}
+
 	W = mul_float44(W, P);
 
 	for (int i = 0; i < QUI_MAN_FLGS_BITS_N; ++i) {
