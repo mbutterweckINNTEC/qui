@@ -17,6 +17,7 @@ int qui_rm();
 #include "qui_strm.h"
 #include "qui_fnt.h"
 #include "qui_txt.h"
+#include "qui_ln.h"
 #include "qui_ngon.h"
 #include "qui_tip.h"
 #include "qui_bttn.h"
