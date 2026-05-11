@@ -1,3 +1,6 @@
+#ifndef QUI_MAN_H
+#define QUI_MAN_H
+
 struct qui_man {
 	int stts;
 	int phi;
@@ -747,3 +750,4 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_MAN_H */

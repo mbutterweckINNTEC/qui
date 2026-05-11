@@ -1,3 +1,6 @@
+#ifndef QUI_FNT_H
+#define QUI_FNT_H
+
 #define QUI_FNT_MX 0x110000
 
 struct qui_fnt {
@@ -160,3 +163,4 @@ int qui_fnt_use(struct qui_fnt *fnt) {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_FNT_H */

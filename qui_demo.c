@@ -273,8 +273,8 @@ int main(int argc, char *argv[]) {
 			qui_in_rls(QUI_IN_RALT);
 		}
 		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
-			qui_txt_ms ^= 1;
-			printf("%s\n", qui_txt_ms ? "multisample" : "smooth");
+			qui_flgs ^= QUI_FLGS_AA;
+			printf("%s\n", qui_flgs & QUI_FLGS_AA ? "multisample" : "smooth");
 		}
 
 		{
@@ -360,7 +360,7 @@ int main(int argc, char *argv[]) {
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
 
-		//qui_txt("ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+		qui_txt("ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
 
 //		qui_ngon(5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
 //		qui_ngon_strk(5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});

@@ -1,3 +1,6 @@
+#ifndef QUI_IN_H
+#define QUI_IN_H
+
 /* input facilities of qui */
 
 enum {
@@ -90,4 +93,5 @@ int qui_in_nxt() {
 	return 0;
 }
 
-#endif
+#endif /* QUI_IMPL */
+#endif /* QUI_IN_H */

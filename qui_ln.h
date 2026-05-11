@@ -1,4 +1,11 @@
+#ifndef QUI_LN_H
+#define QUI_LN_H
 #define QUI_BZR_F 8
+
+int qui_ln(int n, float2_t p[], float44_t M, float4_t c);
+int qui_bzr(int n, float2_t p[], float44_t M, float4_t c);
+
+#ifdef QUI_IMPL
 
 int qui_ln(int n, float2_t p[], float44_t M, float4_t c) {
 	float2_t *v;
@@ -96,3 +103,6 @@ int qui_bzr(int n, float2_t p[], float44_t M, float4_t c) {
 
 	return 0;
 }
+
+#endif /* QUI_IMPL */
+#endif /* QUI_LN_H */

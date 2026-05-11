@@ -1,3 +1,5 @@
+#ifndef QUI_TGGL_H
+#define QUI_TGGL_H
 
 int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr);
 
@@ -123,3 +125,4 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr) {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_TGGL_H */

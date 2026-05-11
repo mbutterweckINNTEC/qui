@@ -1,3 +1,5 @@
+#ifndef QUI_UTIL_H
+#define QUI_UTIL_H
 
 static int qui_utf8_pop(char **a) {
     int c = (unsigned char)(*a)[0];
@@ -158,3 +160,5 @@ static float qui_ray_seg_dst(float3_t ro, float3_t rd, float3_t a, float3_t b) {
 		length_float3(sub_float3(b, add_float3(ro, scale_float3(rd, dot_float3(rd, sub_float3(b, ro))))))
 	);
 }
+
+#endif /* QUI_UTIL_H */

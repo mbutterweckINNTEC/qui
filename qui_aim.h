@@ -1,3 +1,5 @@
+#ifndef QUI_AIM_H
+#define QUI_AIM_H
 
 int qui_aim(float3_t *p, float3_t *n, float3_t *s, float3_t *t, int lnwdth);
 
@@ -200,3 +202,4 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n, int lnwdth) {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_AIM_H */

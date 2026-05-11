@@ -1,6 +1,11 @@
+#ifndef QUI_TXT_H
+#define QUI_TXT_H
+
 #define QUI_TXT_MX 256
 
-int qui_txt_ms = 0;
+static int qui_txt(char *a, float44_t M, float4_t c);
+
+#ifdef QUI_IMPL
 
 static int qui_txt(char *a, float44_t M, float4_t c) {
 	int u, stts = 1;
@@ -67,3 +72,6 @@ static int qui_txt(char *a, float44_t M, float4_t c) {
 
 	return 0;
 }
+
+#endif /* QUI_IMPL */
+#endif /* QUI_TXT_H */

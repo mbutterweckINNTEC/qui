@@ -1,3 +1,6 @@
+#ifndef QUI_DEF_H
+#define QUI_DEF_H
+
 #define QUI_MAN_AXIS_X_N 2
 #define QUI_MAN_CRCL_X_N 360
 #define QUI_MAN_AXIS_Y_N 2
@@ -32,3 +35,4 @@
 #define QUI_MAN_S_XY 0.875f
 #define QUI_MAN_S_DXY 0.9375f
 
+#endif /* QUI_DEF_H */

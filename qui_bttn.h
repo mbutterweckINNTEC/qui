@@ -1,3 +1,5 @@
+#ifndef QUI_BTTN_H
+#define QUI_BTTN_H
 
 enum {
 	QUI_BTTN_NIL,	/* always zero */
@@ -93,3 +95,4 @@ int qui_bttn(char *nm, float44_t M, float3_t clr) {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_BTTN_H */

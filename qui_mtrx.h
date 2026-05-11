@@ -1,3 +1,6 @@
+#ifndef QUI_MTRX_H
+#define QUI_MTRX_H
+
 enum {
 	QUI_MTRX_P,	/* projection matrix */
 	QUI_MTRX_V,	/* view matrix */
@@ -48,4 +51,5 @@ float44_t qui_mtrx_top(int typ) {
 }
 
 
-#endif
+#endif /* QUI_IMPL */
+#endif /* QUI_MTRX_H */

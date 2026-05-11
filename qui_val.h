@@ -1,3 +1,6 @@
+#ifndef QUI_VAL_H
+#define QUI_VAL_H
+
 enum {
 	QUI_VAL_FLGS_RST = 0x1,		/* reset value on edit */
 	QUI_VAL_FLGS_CNST = 0x2		/* immutable */
@@ -13,6 +16,7 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int flgs);
 
 /* Implementation */
+#ifdef QUI_IMPL
 
 static float const qui_val_scl = 0.03125;
 static float2_t const qui_val_mv = {0.035 / 0.0625 * qui_val_scl, 0.02 / 0.0625 * qui_val_scl };
@@ -324,3 +328,5 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 	}
 	return QUI_VAL_RET_NIL;
 }
+#endif /* QUI_IMPL */
+#endif /* QUI_VAL_H */

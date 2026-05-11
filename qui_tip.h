@@ -1,3 +1,6 @@
+#ifndef QUI_TIP_H
+#define QUI_TIP_H
+
 extern float4_t qui_tip_clr;
 
 void qui_tip_bgn();
@@ -112,3 +115,4 @@ void qui_tip_bgn() {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_TIP_H */

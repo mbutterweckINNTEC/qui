@@ -1,3 +1,11 @@
+#ifndef QUI_NGON_H
+#define QUI_NGON_H
+
+int qui_ngon(int n, float2_t p[], float44_t M, float4_t c);
+int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c);
+
+#ifdef QUI_IMPL
+
 int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
 	float2_t *v;
 	int s = n * sizeof(float2_t);
@@ -90,3 +98,6 @@ int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
 
 	return 0;
 }
+
+#endif /* QUI_IMPL */
+#endif /* QUI_NGON_H */

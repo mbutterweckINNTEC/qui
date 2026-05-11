@@ -1,3 +1,6 @@
+#ifndef QUI_SHDR_H
+#define QUI_SHDR_H
+
 extern int qui_shdr_po, qui_shdr_M;
 
 int qui_shdr_mk();
@@ -118,3 +121,4 @@ int qui_shdr_rm() {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_SHDR_H */

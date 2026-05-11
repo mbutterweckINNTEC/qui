@@ -1,3 +1,6 @@
+#ifndef QUI_STRM_H
+#define QUI_STRM_H
+
 #define QUI_STRM_SZ 0x10000
 
 extern int qui_strm_vbo, qui_strm_vao, qui_strm_n;
@@ -61,3 +64,4 @@ void *qui_strm_map(int s, int *offst /* out */) {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_STRM_H */
