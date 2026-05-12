@@ -360,7 +360,16 @@ int main(int argc, char *argv[]) {
 		VM = mul_float44(M, V);
 		PVM = mul_float44(VM, P);
 
-		qui_txt("ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+//		qui_txt("ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+
+		qui_mtrx_psh(QUI_MTRX_P, P);
+		qui_mtrx_psh(QUI_MTRX_V, V);
+
+		qui_msr2((float3_t){0,0,0}, (float3_t){1,1,1}, (float3_t){0,0,1}, 0.025, 0.1, (float4_t){1,1,1,1});
+
+		qui_mtrx_pop(QUI_MTRX_V);
+		qui_mtrx_pop(QUI_MTRX_P);
+
 
 //		qui_ngon(5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 1, 1, 1.});
 //		qui_ngon_strk(5, (float2_t[]) { {-0.3, -0.3}, { 0.3,-0.3}, {0.3, 0.3}, {0, 0}, {-0.3, 0.3}}, P, (float4_t){1, 0, 1, 1.});

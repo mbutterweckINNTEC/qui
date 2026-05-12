@@ -23,6 +23,7 @@ int qui_rm();
 #include "qui_bttn.h"
 #include "qui_tggl.h"
 #include "qui_val.h"
+#include "qui_msr.h"
 #include "qui_man.h"
 #include "qui_aim.h"
 
