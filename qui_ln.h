@@ -2,12 +2,18 @@
 #define QUI_LN_H
 #define QUI_BZR_F 8
 
-int qui_ln(int n, float2_t p[], float44_t M, float4_t c);
+/* one long polyline */
+int qui_plln(int n, float2_t p[], float44_t M, float4_t c);
+
+/* separate 2-point lines */
+int qui_lns(int n, float2_t p[], float44_t M, float4_t c);
+
+/* bezier curve of order n */
 int qui_bzr(int n, float2_t p[], float44_t M, float4_t c);
 
 #ifdef QUI_IMPL
 
-int qui_ln(int n, float2_t p[], float44_t M, float4_t c) {
+int qui_ln_(int n, float2_t p[], float44_t M, float4_t c, int mod) {
 	float2_t *v;
 	int s = n * sizeof(float2_t);
 	int b;
@@ -38,11 +44,21 @@ int qui_ln(int n, float2_t p[], float44_t M, float4_t c) {
 	glBindVertexArray(qui_strm_vao);
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 
-	glDrawArrays(GL_LINE_STRIP, b, n);
+	glDrawArrays(mod, b, n);
 
 	return 0;
 }
 
+int qui_plln(int n, float2_t p[], float44_t M, float4_t c) {
+	return qui_ln_(n, p, M, c, GL_LINE_STRIP);
+}
+
+int qui_lns(int n, float2_t p[], float44_t M, float4_t c) {
+	if (n & 1)
+		return -1;
+
+	return qui_ln_(n, p, M, c, GL_LINES);
+}
 
 static inline float nwtn(int n, int k) {
 	float ns = 1.0;
