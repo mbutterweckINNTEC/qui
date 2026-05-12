@@ -3,11 +3,33 @@
 
 #define QUI_TXT_MX 256
 
-static int qui_txt(char *a, float44_t M, float4_t c);
+int qui_txt(char *a, float44_t M, float4_t c);
+float qui_txt_len(char *a);
 
 #ifdef QUI_IMPL
 
-static int qui_txt(char *a, float44_t M, float4_t c) {
+float qui_txt_len(char *a) {
+	float len = 0;
+	int u, stts = 1;
+
+	while (*a) {
+		u = qui_utf8_pop(&a);
+
+		if (QUI_FNT_MX <= u)
+			continue;
+
+		if (stts & 1) {
+			len = qui_fnt->glph[u].lsb;
+			stts ^= 1;
+		}
+
+		len += qui_fnt->glph[u].xadv;
+	}
+
+	return len;
+}
+
+int qui_txt(char *a, float44_t M, float4_t c) {
 	int u, stts = 1;
 
 	enum {
