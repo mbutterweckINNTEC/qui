@@ -2,6 +2,8 @@
 #define QUI_LN_H
 #define QUI_BZR_F 8
 
+int qui_dots(int n, float2_t p[], float44_t M, float4_t c);
+
 /* one long polyline */
 int qui_plln(int n, float2_t p[], float44_t M, float4_t c);
 
@@ -47,6 +49,10 @@ int qui_ln_(int n, float2_t p[], float44_t M, float4_t c, int mod) {
 	glDrawArrays(mod, b, n);
 
 	return 0;
+}
+
+int qui_dots(int n, float2_t p[], float44_t M, float4_t c) {
+	return qui_ln_(n, p, M, c, GL_POINTS);
 }
 
 int qui_plln(int n, float2_t p[], float44_t M, float4_t c) {
