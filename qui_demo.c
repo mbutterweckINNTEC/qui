@@ -57,6 +57,8 @@ float cube_v[] = {
 	-0.5f, -0.375f,  0.25f, 1.f
 };
 
+int cube_v_n = 8;
+
 int cube_i[] = {
 	4, 2, 0,
 	2, 7, 3,
@@ -121,7 +123,12 @@ int main(int argc, char *argv[]) {
 
 	glfwSetScrollCallback(wndw, qui_scrll_cb);
 
-	cube_po = shdr_bld(cube_vsh, cube_fsh);
+	cube_po = shdr_bld(
+			2,
+			(char const *[]){cube_vsh, cube_fsh},
+			(int []){ GL_VERTEX_SHADER, GL_FRAGMENT_SHADER },
+			NULL
+	);
 
 	qui_mk();
 
@@ -133,7 +140,6 @@ int main(int argc, char *argv[]) {
 	glBindBuffer(GL_ARRAY_BUFFER, cube_bo[0]);
 	glVertexAttribPointer(0, 4, GL_FLOAT, 0, 0, 0);
 	glEnableVertexAttribArray(0); 
-	glVertexAttribPointer(0, 4, GL_FLOAT, 0, 0, 0);
 	glVertexAttrib4f(1, 1,1,1,1);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube_bo[1]);
 	glBindVertexArray(0);
@@ -302,6 +308,31 @@ int main(int argc, char *argv[]) {
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 		glDisable(GL_DEPTH_TEST);
 
+		{
+			float4_t cr_ = { 0, 0, 1, 0 };
+			float4_t co_ = { qui_in.p.x, qui_in.p.y, -1, 1 };
+			float detPV = det_float44(PV);
+			float44_t iPV = invert_float44(PV, detPV);
+			float3_t cr = m_float3(cotransform_float44(iPV, cr_));
+			float3_t co = float3_float4(cotransform_float44(iPV, co_));
+			fprintf(stderr, "cr = {%f, %f, %f}\n", cr.x, cr.y, cr.z);
+			fprintf(stderr, "co = {%f, %f, %f}\n", co.x, co.y, co.z);
+			qui_qr_bgn(cr, co, 0.0625, 8);
+			qui_qr_psh(M, cube_bo[0], cube_v_n, 16, 0); 
+			qui_qr_end();
+
+			fprintf(stderr, "M:\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n",
+					M.m[0][0], M.m[0][1], M.m[0][2], M.m[0][3], 
+					M.m[1][0], M.m[1][1], M.m[1][2], M.m[1][3], 
+					M.m[2][0], M.m[2][1], M.m[2][2], M.m[2][3], 
+					M.m[3][0], M.m[3][1], M.m[3][2], M.m[3][3] 
+			);
+			fprintf(stderr, "query[%d]:\n", qui_qr_n);
+			if (qui_qr) {
+				for (int i = 0; i < qui_qr_n; ++i)
+					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[i].x, qui_qr[i].y, qui_qr[i].z);
+			}
+		}
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);
 

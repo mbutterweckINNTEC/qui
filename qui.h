@@ -13,6 +13,7 @@ int qui_rm();
 #include "qui_def.h"
 #include "qui_in.h"
 #include "qui_shdr.h"
+#include "qui_qr.h"
 #include "qui_util.h"
 #include "qui_strm.h"
 #include "qui_fnt.h"
