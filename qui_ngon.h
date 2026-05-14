@@ -1,14 +1,14 @@
 #ifndef QUI_NGON_H
 #define QUI_NGON_H
 
-int qui_ngon(int n, float2_t p[], float44_t M, float4_t c);
-int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c);
+int qui_ngon(int n, float3_t p[], float44_t M, float4_t c);
+int qui_ngon_strk(int n, float3_t p[], float44_t M, float4_t c);
 
 #ifdef QUI_IMPL
 
-int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
-	float2_t *v;
-	int s = n * sizeof(float2_t);
+int qui_ngon(int n, float3_t p[], float44_t M, float4_t c) {
+	float3_t *v;
+	int s = n * sizeof(float3_t);
 	int b;
 
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
@@ -26,7 +26,7 @@ int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
 		return -1;
 	}
 
-	b /= sizeof(float2_t);
+	b /= sizeof(float3_t);
 
 	memcpy(v, p, s);
 
@@ -63,9 +63,9 @@ int qui_ngon(int n, float2_t p[], float44_t M, float4_t c) {
 	return 0;    
 }
 
-int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
-	float2_t *v;
-	int s = n * sizeof(float2_t);
+int qui_ngon_strk(int n, float3_t p[], float44_t M, float4_t c) {
+	float3_t *v;
+	int s = n * sizeof(float3_t);
 	int b;
 
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
@@ -82,7 +82,7 @@ int qui_ngon_strk(int n, float2_t p[], float44_t M, float4_t c) {
 		return -1;
 	}
 
-	b /= sizeof(float2_t);
+	b /= sizeof(float3_t);
 
 	memcpy(v, p, s);
 

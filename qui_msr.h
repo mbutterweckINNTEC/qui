@@ -10,25 +10,25 @@ int qui_msr2(float3_t pa, float3_t pb, float3_t n, float mnr, float myr, float4_
 	float l = length_float3(d);
 	float3_t t = normal_float3(cross_float3(n, d));
 	int mnrn = (int)(l / mnr), myrn = (int)(l / myr) + 1, pn = (mnrn + myrn + 1) << 1, off = 0;
-	float2_t *p = alloca(pn * sizeof(float2_t));
-	float2_t *p_ = p;
+	float3_t *p = alloca(pn * sizeof(float3_t));
+	float3_t *p_ = p;
 	float3_t s;
 	int tic = 5;
 
 	if (NULL == p)
 		return -1;
 
-	*p++ = (float2_t){ 0.f, 0.f };
-	*p++ = (float2_t){ l, 0.f };
+	*p++ = (float3_t){ 0.f, 0.f };
+	*p++ = (float3_t){ l, 0.f };
 
 	for (int i = 1; i <= mnrn; ++i) {
-		*p++ = (float2_t) { i * mnr };
-		*p++ = (float2_t) { i * mnr, 0.0625 };
+		*p++ = (float3_t) { i * mnr };
+		*p++ = (float3_t) { i * mnr, 0.0625 };
 	}
 
 	for (int i = 0; i <= myrn; ++i) {
-		*p++ = (float2_t) { i * myr };
-		*p++ = (float2_t) { i * myr, 0.125 };
+		*p++ = (float3_t) { i * myr };
+		*p++ = (float3_t) { i * myr, 0.125 };
 	}
 
 	float3_t d_ = normal_float3(d);

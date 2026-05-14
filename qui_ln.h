@@ -2,22 +2,22 @@
 #define QUI_LN_H
 #define QUI_BZR_F 8
 
-int qui_dots(int n, float2_t p[], float44_t M, float4_t c);
+int qui_dots(int n, float3_t p[], float44_t M, float4_t c);
 
 /* one long polyline */
-int qui_plln(int n, float2_t p[], float44_t M, float4_t c);
+int qui_plln(int n, float3_t p[], float44_t M, float4_t c);
 
 /* separate 2-point lines */
-int qui_lns(int n, float2_t p[], float44_t M, float4_t c);
+int qui_lns(int n, float3_t p[], float44_t M, float4_t c);
 
 /* bezier curve of order n */
-int qui_bzr(int n, float2_t p[], float44_t M, float4_t c);
+int qui_bzr(int n, float3_t p[], float44_t M, float4_t c);
 
 #ifdef QUI_IMPL
 
-int qui_ln_(int n, float2_t p[], float44_t M, float4_t c, int mod) {
-	float2_t *v;
-	int s = n * sizeof(float2_t);
+int qui_ln_(int n, float3_t p[], float44_t M, float4_t c, int mod) {
+	float3_t *v;
+	int s = n * sizeof(float3_t);
 	int b;
 
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
@@ -34,7 +34,7 @@ int qui_ln_(int n, float2_t p[], float44_t M, float4_t c, int mod) {
 		return -1;
 	}
 
-	b /= sizeof(float2_t);
+	b /= sizeof(float3_t);
 
 	memcpy(v, p, s);
 
@@ -51,15 +51,15 @@ int qui_ln_(int n, float2_t p[], float44_t M, float4_t c, int mod) {
 	return 0;
 }
 
-int qui_dots(int n, float2_t p[], float44_t M, float4_t c) {
+int qui_dots(int n, float3_t p[], float44_t M, float4_t c) {
 	return qui_ln_(n, p, M, c, GL_POINTS);
 }
 
-int qui_plln(int n, float2_t p[], float44_t M, float4_t c) {
+int qui_plln(int n, float3_t p[], float44_t M, float4_t c) {
 	return qui_ln_(n, p, M, c, GL_LINE_STRIP);
 }
 
-int qui_lns(int n, float2_t p[], float44_t M, float4_t c) {
+int qui_lns(int n, float3_t p[], float44_t M, float4_t c) {
 	if (n & 1)
 		return -1;
 
@@ -75,20 +75,20 @@ static inline float nwtn(int n, int k) {
 	return ns;
 }
 
-static inline float2_t bzr(double t, int n, float2_t p[]) {
-	float2_t b = { 0.f, 0.f };
+static inline float3_t bzr(double t, int n, float3_t p[]) {
+	float3_t b = { 0.f, 0.f };
 	int m = n - 1;
 
 	for (int i = 0; i < n; ++i)
-		b = add_float2(b, scale_float2(p[i], nwtn(m, i) * pow(t, i) * pow(1.f - t, m - i)));
+		b = add_float3(b, scale_float3(p[i], nwtn(m, i) * pow(t, i) * pow(1.f - t, m - i)));
 
 	return b;
 }
 
-int qui_bzr(int n, float2_t p[], float44_t M, float4_t c) {
-	float2_t *v;
+int qui_bzr(int n, float3_t p[], float44_t M, float4_t c) {
+	float3_t *v;
 	int nt = n * QUI_BZR_F;
-	int s = nt * sizeof(float2_t);
+	int s = nt * sizeof(float3_t);
 	int b;
 
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
@@ -104,7 +104,7 @@ int qui_bzr(int n, float2_t p[], float44_t M, float4_t c) {
 	if (NULL == v)
 		return -1;
 
-	b /= sizeof(float2_t);
+	b /= sizeof(float3_t);
 
 	for (int i = 0; i < nt; ++i) {
 		v[i] = bzr((float)i / (float)(nt - 1), n, p);

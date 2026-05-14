@@ -12,15 +12,15 @@ int qui_bttn(char *nm, float44_t M, float3_t clr);
 #ifdef QUI_IMPL
 
 static float const qui_bttn_scl = 0.03125;
-static float2_t const qui_bttn_mv = {0.035 / 0.0625 * qui_bttn_scl, 0.02 / 0.0625 * qui_bttn_scl };
+static float3_t const qui_bttn_mv = {0.035 / 0.0625 * qui_bttn_scl, 0.02 / 0.0625 * qui_bttn_scl };
 
-static float2_t qui_bttn_ngon[] = {
-	{ -1.f, 0.f },
-	{-0.5f, 0.8660254038f },
-	{ 0.5f, 0.8660254038f },
-	{ 1.0, 0.0},
-	{ 0.5f,-0.8660254038f },
-	{-0.5f,-0.8660254038f },
+static float3_t qui_bttn_ngon[] = {
+	{ -1.f, 0.f, 0.f },
+	{-0.5f, 0.8660254038f, 0.f },
+	{ 0.5f, 0.8660254038f, 0.f },
+	{ 1.0, 0.0, 0.f },
+	{ 0.5f,-0.8660254038f, 0.f },
+	{-0.5f,-0.8660254038f, 0.f },
 };
 
 int qui_bttn(char *nm, float44_t M, float3_t clr) {

@@ -6,9 +6,9 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr);
 #ifdef QUI_IMPL
 
 static float const qui_tggl_scl = 0.03125;
-static float2_t const qui_tggl_mv = {0.035 / 0.0625 * qui_tggl_scl, 0.02 / 0.0625 * qui_tggl_scl };
+static float3_t const qui_tggl_mv = {0.035 / 0.0625 * qui_tggl_scl, 0.02 / 0.0625 * qui_tggl_scl };
 
-static float2_t qui_tggl_ngon[] = {
+static float3_t qui_tggl_ngon[] = {
 	{ -2.f, 0.f },
 	{-1.5f, 0.8660254038f },
 	{ 1.5f, 0.8660254038f },
@@ -17,7 +17,7 @@ static float2_t qui_tggl_ngon[] = {
 	{-1.5f,-0.8660254038f }
 };
 
-static float2_t qui_tggl_ins_ngon[] = {
+static float3_t qui_tggl_ins_ngon[] = {
 	{-0.25f, 0.f },
 	{ 0.125f, 0.6495190528f },
 	{ 1.375f, 0.6495190528f },
@@ -26,7 +26,7 @@ static float2_t qui_tggl_ins_ngon[] = {
 	{ 0.125f,-0.6495190528f },
 };
 
-static float2_t qui_tggl_knob_off_ngon[] = {
+static float3_t qui_tggl_knob_off_ngon[] = {
 	{-0.25f, 0.f },
 	{ 0.125f, 0.6495190528f },
 	{ 0.875f, 0.6495190528f },
@@ -35,7 +35,7 @@ static float2_t qui_tggl_knob_off_ngon[] = {
 	{ 0.125f,-0.6495190528f },
 };
 
-static float2_t qui_tggl_knob_on_ngon[] = {
+static float3_t qui_tggl_knob_on_ngon[] = {
 	{ 0.25f, 0.f },
 	{ 0.625f, 0.6495190528f },
 	{ 1.375f, 0.6495190528f },

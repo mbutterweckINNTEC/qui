@@ -29,7 +29,7 @@ int qui_strm_mk() {
 
 	glBindVertexArray(qui_strm_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, qui_strm_vbo);
-	glVertexAttribPointer(0, 2, GL_FLOAT, 0, 8, 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
