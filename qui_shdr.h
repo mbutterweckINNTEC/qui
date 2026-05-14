@@ -2,7 +2,7 @@
 #define QUI_SHDR_H
 
 extern int qui_shdr_po, qui_shdr_M;
-extern int qui_shdr_qr_po, qui_shdr_qr_M, qui_shdr_qr_o, qui_shdr_qr_r, qui_shdr_qr_R;
+extern int qui_shdr_qr_po[3], qui_shdr_qr_M[3], qui_shdr_qr_o[3], qui_shdr_qr_r[3], qui_shdr_qr_R[3];
 
 int qui_shdr_mk();
 int qui_shdr_rm();
@@ -10,7 +10,7 @@ int qui_shdr_rm();
 #ifdef QUI_IMPL
 
 int qui_shdr_po, qui_shdr_M;
-int qui_shdr_qr_po, qui_shdr_qr_M, qui_shdr_qr_o, qui_shdr_qr_r, qui_shdr_qr_R;
+int qui_shdr_qr_po[3], qui_shdr_qr_M[3], qui_shdr_qr_o[3], qui_shdr_qr_r[3], qui_shdr_qr_R[3];
 
 static int shdr_bld(int n, char  const *shsrc[], int shtyp[], char *tfvar) {
 	char log[4096];
@@ -85,7 +85,7 @@ char *qui_fsh =
 	"	K = k;"				"\n"
 	"}"					"\n";
 
-char *qui_vsh_qr =
+char *qui_vsh_qr = 
 	"#version 440"				"\n"
 	"in      vec4 v;"			"\n"
 	"uniform mat4 M;"			"\n"
@@ -94,7 +94,7 @@ char *qui_vsh_qr =
 	"	gl_Position = M * v;"		"\n"
 	"}"					"\n";
 
-char *qui_gsh_qr =
+char *qui_gsh_qr[3] = {
 	"#version 440 core"					"\n"
 	"layout(points) in;"					"\n"
 	"layout(points, max_vertices = 1) out;"			"\n"
@@ -119,7 +119,42 @@ char *qui_gsh_qr =
 	"			EndPrimitive();"		"\n"
 	"		}"					"\n"
 	"	}"						"\n"
-	"}"							"\n";
+	"}"							"\n",
+
+	"#version 440 core"					"\n"
+	"layout(lines) in;"					"\n"
+	"layout(line_strip, max_vertices = 2) out;"		"\n"
+	""							"\n"
+	"uniform vec3 o, r;"					"\n"
+	"uniform float R;"					"\n"
+	""							"\n"
+	"out vec3 xv;"						"\n"
+	""							"\n"
+	"uniform mat4 M;"					"\n"
+	"void main() {"						"\n"
+	"	vec3 pa = gl_in[0].gl_Position.xyz /"		"\n"
+	"		gl_in[0].gl_Position.w;"		"\n"
+	"	vec3 pb = gl_in[1].gl_Position.xyz /"		"\n"
+	"		gl_in[1].gl_Position.w;"		"\n"
+	"	vec3 b = pb - pa;"				"\n"
+	"	vec3 c = pa - o;"				"\n"
+	"	vec3 rxb = cross(r, b);"			"\n"
+	"	float d = length(dot(c, rxb)) / length(rxb);"	"\n"
+	"	if (d < R) {"					"\n"
+	"		vec3 rxrxb = cross(r, rxb);"		"\n"
+	"		float s = -dot(c, rxrxb) / dot(b, rxrxb);\n"
+	"		if (0.0 <= s && s <= 1.0) {"		"\n"
+	"			gl_Position = vec4(pa, 1.0);"	"\n"
+	"			xv = pa;"			"\n"
+	"			EmitVertex();"			"\n"
+	"			gl_Position = vec4(pb, 1.0);"	"\n"
+	"			xv = pb;"			"\n"
+	"			EmitVertex();"			"\n"
+	"			EndPrimitive();"		"\n"
+	"		}"					"\n"
+	"	}"						"\n"
+	"}"							"\n",
+};
 
 int qui_shdr_mk() {
 	qui_shdr_po = shdr_bld(2, (char const *[]){ qui_vsh, qui_fsh}, (int[]){ GL_VERTEX_SHADER, GL_FRAGMENT_SHADER}, NULL);
@@ -132,22 +167,27 @@ int qui_shdr_mk() {
 	if (qui_shdr_M == -1)
 		return -1;
 
-	qui_shdr_qr_po = shdr_bld(2, (char const *[]){ qui_vsh_qr, qui_gsh_qr}, (int[]){ GL_VERTEX_SHADER, GL_GEOMETRY_SHADER}, "xv");
+	for (int i = 0; i < 3; ++i) {
+		qui_shdr_qr_po[i] = shdr_bld(2, 
+				(char const *[]){ qui_vsh_qr, qui_gsh_qr[i]}, 
+				(int[]){ GL_VERTEX_SHADER, GL_GEOMETRY_SHADER}, "xv"
+		);
 
-	if (!qui_shdr_qr_po)
-		return -1;
+		if (!qui_shdr_qr_po[i])
+			return -1;
 
-	if (-1 == (qui_shdr_qr_M = glGetUniformLocation(qui_shdr_qr_po, "M")))
-		return -1;
+		if (-1 == (qui_shdr_qr_M[i] = glGetUniformLocation(qui_shdr_qr_po[i], "M")))
+			return -1;
 
-	if (-1 == (qui_shdr_qr_o = glGetUniformLocation(qui_shdr_qr_po, "o")))
-		return -1;
+		if (-1 == (qui_shdr_qr_o[i] = glGetUniformLocation(qui_shdr_qr_po[i], "o")))
+			return -1;
 
-	if (-1 == (qui_shdr_qr_r = glGetUniformLocation(qui_shdr_qr_po, "r")))
-		return -1;
+		if (-1 == (qui_shdr_qr_r[i] = glGetUniformLocation(qui_shdr_qr_po[i], "r")))
+			return -1;
 
-	if (-1 == (qui_shdr_qr_R = glGetUniformLocation(qui_shdr_qr_po, "R")))
-		return -1;
+		if (-1 == (qui_shdr_qr_R[i] = glGetUniformLocation(qui_shdr_qr_po[i], "R")))
+			return -1;
+	}
 
 	return 0;
 }

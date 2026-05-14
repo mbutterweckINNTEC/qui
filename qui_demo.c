@@ -74,6 +74,22 @@ int cube_i[] = {
 	4, 0, 1
 };
 
+int cube_j[] = {
+	0, 1,
+	0, 4,
+	0, 2,
+	1, 3,
+	1, 5,
+	2, 3,
+	2, 6,
+	3, 7,
+	4, 5,
+	5, 7,
+	4, 6,
+	6, 7
+};
+
+
 float qui_scrll;
 float qui_scrll_sgn = 1.f;
 
@@ -83,7 +99,7 @@ void qui_scrll_cb(GLFWwindow *wndw, double x, double y) {
 
 int main(int argc, char *argv[]) {
 	GLFWwindow *wndw;
-	int w = 1024, h = 1024, qui_po, cube_po, cube_bo[2], cube_vao, M_loc_cube, qui_bo, qui_vao, M_loc_qui;
+	int w = 1024, h = 1024, qui_po, cube_po, cube_bo[3], cube_vao, M_loc_cube, qui_bo, qui_vao, M_loc_qui;
 	float bg[4] = { 170.f/255.f, 170.f/255.f, 170.f/255.f, 0};
 	float44_t M = identity_sc;
 	float44_t Q = identity_sc;
@@ -132,9 +148,10 @@ int main(int argc, char *argv[]) {
 
 	qui_mk();
 
-	glCreateBuffers(2, cube_bo);
+	glCreateBuffers(3, cube_bo);
 	glNamedBufferStorage(cube_bo[0], sizeof(cube_v), cube_v, 0);
 	glNamedBufferStorage(cube_bo[1], sizeof(cube_i), cube_i, 0);
+	glNamedBufferStorage(cube_bo[2], sizeof(cube_j), cube_j, 0);
 	glGenVertexArrays(1, &cube_vao);
 	glBindVertexArray(cube_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, cube_bo[0]);
@@ -309,29 +326,56 @@ int main(int argc, char *argv[]) {
 		glDisable(GL_DEPTH_TEST);
 
 		{
-			float4_t cr_ = { 0, 0, 1, 0 };
-			float4_t co_ = { qui_in.p.x, qui_in.p.y, -1, 1 };
+			float4_t cr_ = { 0, 0, -1, 0 };
+			float4_t co_ = { qui_in.p.x, qui_in.p.y, 1, 1 };
 			float detPV = det_float44(PV);
 			float44_t iPV = invert_float44(PV, detPV);
 			float3_t cr = m_float3(cotransform_float44(iPV, cr_));
 			float3_t co = float3_float4(cotransform_float44(iPV, co_));
-			fprintf(stderr, "cr = {%f, %f, %f}\n", cr.x, cr.y, cr.z);
-			fprintf(stderr, "co = {%f, %f, %f}\n", co.x, co.y, co.z);
-			qui_qr_bgn(cr, co, 0.0625, 8);
-			qui_qr_psh(M, cube_bo[0], cube_v_n, 16, 0); 
+//			fprintf(stderr, "cr = {%f, %f, %f}\n", cr.x, cr.y, cr.z);
+//			fprintf(stderr, "co = {%f, %f, %f}\n", co.x, co.y, co.z);
+			qui_qr_bgn(cr, co, 0.0625, 8, QUI_QR_TYP_PNTS);
+			qui_qr_psh_arr(M, cube_bo[0], cube_v_n, 16, 0); 
 			qui_qr_end();
 
-			fprintf(stderr, "M:\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n",
-					M.m[0][0], M.m[0][1], M.m[0][2], M.m[0][3], 
-					M.m[1][0], M.m[1][1], M.m[1][2], M.m[1][3], 
-					M.m[2][0], M.m[2][1], M.m[2][2], M.m[2][3], 
-					M.m[3][0], M.m[3][1], M.m[3][2], M.m[3][3] 
-			);
-			fprintf(stderr, "query[%d]:\n", qui_qr_n);
-			if (qui_qr) {
-				for (int i = 0; i < qui_qr_n; ++i)
-					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[i].x, qui_qr[i].y, qui_qr[i].z);
+			qui_qr_bgn(cr, co, 0.0625, 128, QUI_QR_TYP_LNS);
+			qui_qr_psh_elm(M, cube_bo[0], cube_bo[2], sizeof(cube_j) / sizeof(int), 16, 0); 
+			qui_qr_end();
+
+
+//			fprintf(stderr, "M:\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n",
+//					M.m[0][0], M.m[0][1], M.m[0][2], M.m[0][3], 
+//					M.m[1][0], M.m[1][1], M.m[1][2], M.m[1][3], 
+//					M.m[2][0], M.m[2][1], M.m[2][2], M.m[2][3], 
+//					M.m[3][0], M.m[3][1], M.m[3][2], M.m[3][3] 
+//			);
+			if (qui_qr_n[0]) {
+				fprintf(stderr, "query[pnts][%d]:\n", qui_qr_n[0]);
+				for (int i = 0; i < qui_qr_n[0]; ++i) {
+					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[0][i].x, qui_qr[0][i].y, qui_qr[0][i].z);
+				}
+				if (qui_qr_n[0]) {
+					qui_mtrx_psh(QUI_MTRX_P, P);
+					qui_mtrx_psh(QUI_MTRX_V, V);
+					qui_dots(qui_qr_n[0], qui_qr[0], 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					qui_mtrx_pop(QUI_MTRX_V);
+					qui_mtrx_pop(QUI_MTRX_P);
+				}
 			}
+			if (qui_qr_n[1]) {
+				fprintf(stderr, "query[lns][%d]:\n", qui_qr_n[1]);
+				for (int i = 0; i < qui_qr_n[1]; ++i) {
+					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[1][i].x, qui_qr[1][i].y, qui_qr[1][i].z);
+				}
+				if (qui_qr_n[1]) {
+					qui_mtrx_psh(QUI_MTRX_P, P);
+					qui_mtrx_psh(QUI_MTRX_V, V);
+					qui_lns(qui_qr_n[1], qui_qr[1], 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					qui_mtrx_pop(QUI_MTRX_V);
+					qui_mtrx_pop(QUI_MTRX_P);
+				}
+			}
+
 		}
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);
