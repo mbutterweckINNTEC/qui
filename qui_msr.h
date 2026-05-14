@@ -40,7 +40,7 @@ int qui_msr2(float3_t pa, float3_t pb, float3_t n, float mnr, float myr, float4_
 		0.f, 0.f, 0.f, 1.f
 	};
 
-	qui_lns(pn, p_, B, c);
+	qui_lns(pn, p_, 1, B, c);
 
 	for (int i = 0; i <= myrn; i += tic) {
 		char a[32];

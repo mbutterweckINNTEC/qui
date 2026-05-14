@@ -2,16 +2,16 @@
 #define QUI_LN_H
 #define QUI_BZR_F 8
 
-int qui_dots(int n, float3_t p[], float44_t M, float4_t c);
+int qui_dots(int n, float3_t p[], int pntsz, float44_t M, float4_t c);
 
 /* one long polyline */
-int qui_plln(int n, float3_t p[], float44_t M, float4_t c);
+int qui_plln(int n, float3_t p[], int lnwdth, float44_t M, float4_t c);
 
 /* separate 2-point lines */
-int qui_lns(int n, float3_t p[], float44_t M, float4_t c);
+int qui_lns(int n, float3_t p[], int lnwdth, float44_t M, float4_t c);
 
 /* bezier curve of order n */
-int qui_bzr(int n, float3_t p[], float44_t M, float4_t c);
+int qui_bzr(int n, float3_t p[], int lnwdth, float44_t M, float4_t c);
 
 #ifdef QUI_IMPL
 
@@ -24,7 +24,7 @@ int qui_ln_(int n, float3_t p[], float44_t M, float4_t c, int mod) {
 	float44_t V = qui_mtrx_top(QUI_MTRX_V);
 	float44_t PVM = mul_float44(M, mul_float44(V, P));
 
-	if (!p || n < 3)
+	if (!p || n < 1)
 		return -1;
 
 	/* upload */
@@ -51,19 +51,31 @@ int qui_ln_(int n, float3_t p[], float44_t M, float4_t c, int mod) {
 	return 0;
 }
 
-int qui_dots(int n, float3_t p[], float44_t M, float4_t c) {
-	return qui_ln_(n, p, M, c, GL_POINTS);
+int qui_dots(int n, float3_t p[], int ptsz, float44_t M, float4_t c) {
+//	fprintf(stderr, "drawing dots:\n");
+//	for (int i = 0; i < n; ++i)
+//		fprintf(stderr, "	%f, %f, %f\n", p[i].x, p[i].y, p[i].y);
+	glPointSize(ptsz);
+	int r = qui_ln_(n, p, M, c, GL_POINTS);
+	glPointSize(1);
+	return r;
 }
 
-int qui_plln(int n, float3_t p[], float44_t M, float4_t c) {
-	return qui_ln_(n, p, M, c, GL_LINE_STRIP);
+int qui_plln(int n, float3_t p[], int lnwdth, float44_t M, float4_t c) {
+	glLineWidth(lnwdth);
+	int r = qui_ln_(n, p, M, c, GL_LINE_STRIP);
+	glLineWidth(1);
+	return r;
 }
 
-int qui_lns(int n, float3_t p[], float44_t M, float4_t c) {
+int qui_lns(int n, float3_t p[], int lnwdth, float44_t M, float4_t c) {
 	if (n & 1)
 		return -1;
 
-	return qui_ln_(n, p, M, c, GL_LINES);
+	glLineWidth(lnwdth);
+	int r =  qui_ln_(n, p, M, c, GL_LINES);
+	glLineWidth(1);
+	return r;
 }
 
 static inline float nwtn(int n, int k) {
@@ -85,7 +97,7 @@ static inline float3_t bzr(double t, int n, float3_t p[]) {
 	return b;
 }
 
-int qui_bzr(int n, float3_t p[], float44_t M, float4_t c) {
+int qui_bzr(int n, float3_t p[], int lnwdth, float44_t M, float4_t c) {
 	float3_t *v;
 	int nt = n * QUI_BZR_F;
 	int s = nt * sizeof(float3_t);
@@ -121,7 +133,9 @@ int qui_bzr(int n, float3_t p[], float44_t M, float4_t c) {
 	glBindVertexArray(qui_strm_vao);
 	glVertexAttrib4fv(1, (GLfloat*)&c);
 
+	glLineWidth(lnwdth);
 	glDrawArrays(GL_LINE_STRIP, b, nt);
+	glLineWidth(1);
 
 	return 0;
 }
