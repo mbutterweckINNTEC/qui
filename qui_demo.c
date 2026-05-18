@@ -330,7 +330,7 @@ int main(int argc, char *argv[]) {
 			float4_t co_ = { qui_in.p.x, qui_in.p.y, -1, 1 };
 			float detPV = det_float44(PV);
 			float44_t iPV = invert_float44(PV, detPV);
-			float3_t cr = m_float3(cotransform_float44(iPV, cr_));
+			float3_t cr = m_float3(transform_float44(PV, cr_));
 			float3_t co = float3_float4(cotransform_float44(iPV, co_));
 //			fprintf(stderr, "cr = {%f, %f, %f}\n", cr.x, cr.y, cr.z);
 //			fprintf(stderr, "co = {%f, %f, %f}\n", co.x, co.y, co.z);
@@ -360,13 +360,61 @@ int main(int argc, char *argv[]) {
 					qui_mtrx_psh(QUI_MTRX_P, P);
 					qui_mtrx_psh(QUI_MTRX_V, V);
 
-					if (1 == t)
-						qui_lns(2, qui_qr[t] + i, 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					if (qui_in.prss & QUI_IN_LMB) {
+						ap = qui_qr[t][i + qui_qr_s[t] - 1];
+					}
 
-					if (2 == t)
-						qui_ngon(3, qui_qr[t] + i, M, (float4_t){ 1.f, 0.725f, 0.625f, 1.f });
+					if (0 == t) {
+						if (qui_in.prss & QUI_IN_LMB) {
+							as = (float3_t){ 1.f, 0.f, 0.f };
+							at = (float3_t){ 0.f, 1.f, 0.f };
+							an = (float3_t){ 0.f, 0.f, 1.f };
+						}
+					}
 
-					qui_dots(1, qui_qr[t] + i + qui_qr_s[t] - 1, 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					if (1 == t) {
+						qui_lns(2, qui_qr[t] + i, 8, identity_sc, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+
+						if (qui_in.prss & QUI_IN_LMB) {
+							as = normal_float3(sub_float3(qui_qr[t][i], qui_qr[t][i+1]));
+							at = normal_float3(cross_float3(cr, as));
+							an = normal_float3(cross_float3(at, as));
+						}
+					}
+
+					if (2 == t) {
+						float3_t p[4];
+						memcpy(p, qui_qr[t] + i, sizeof(float3_t) * 3);
+						float3_t u = normal_float3(sub_float3(p[1], p[0]));
+						float3_t v = normal_float3(sub_float3(p[2], p[0]));
+						float3_t w = normal_float3(cross_float3(u, v));
+						v = normal_float3(cross_float3(w, u));
+						if (qui_in.prss & QUI_IN_LMB) {
+							as = u;
+							at = v;
+							an = w;
+						}
+						float scl = sqrt(2) * sqrt(3) * 2 / frobenius_float33(float33_float44(PV));
+						u = scale_float3(u, scl);
+						v = scale_float3(v, scl);
+
+						p[1] = add_float3(p[0], u);
+						p[2] = add_float3(p[0], add_float3(u, v));
+						p[3] = add_float3(p[0], v);
+						p[0] = sub_float3(p[0], add_float3(u, v));
+	
+						glDepthFunc(GL_GEQUAL);
+						glEnable(GL_DEPTH_TEST);
+						glEnable(GL_POLYGON_OFFSET_FILL);
+						glPolygonOffset(0, 4);
+						qui_ngon(4, p, identity_sc, (float4_t){ 1.f, 0.725f, 0.625f, 1.f });
+						glPolygonOffset(0, 0);
+						glDisable(GL_POLYGON_OFFSET_FILL);
+						glDisable(GL_DEPTH_TEST);
+						glDepthFunc(GL_LESS);
+					}
+
+					qui_dots(1, qui_qr[t] + i + qui_qr_s[t] - 1, 16, identity_sc, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
 
 					qui_mtrx_pop(QUI_MTRX_V);
 					qui_mtrx_pop(QUI_MTRX_P);
