@@ -94,16 +94,7 @@ int qui_qr_bgn(float3_t r, float3_t o, float R, int sz, int typ) {
 	glUniform3f(qui_shdr_qr_r[typ], qui_qr_r.x, qui_qr_r.y, qui_qr_r.z);
 	glUniform1f(qui_shdr_qr_R[typ], qui_qr_R);
 
-	int gltyp;
-
-	switch (typ) {
-	case QUI_QR_TYP_PNTS: gltyp = GL_POINTS; break;
-	case QUI_QR_TYP_LNS: gltyp = GL_LINES; break;
-	case QUI_QR_TYP_TRIS: gltyp = GL_TRIANGLES; break;
-	default:
-		return -1;
-	};
-	glBeginTransformFeedback(gltyp);
+	glBeginTransformFeedback(GL_POINTS);
 
 	glBindVertexArray(qui_qr_vao);
 
@@ -164,7 +155,7 @@ int qui_qr_end() {
 	glEndTransformFeedback();
 	glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
 	glGetQueryObjectiv(qui_qr_qo, GL_QUERY_RESULT, &qui_qr_n[qui_qr_typ]);
-	qui_qr_n[qui_qr_typ] *= qui_qr_typ + 1;
+//	qui_qr_n[qui_qr_typ] *= qui_qr_typ + 1;
 	qui_qr[qui_qr_typ] = glMapNamedBuffer(qui_qr_xbo[qui_qr_typ], GL_READ_ONLY);
 
 	return 0;

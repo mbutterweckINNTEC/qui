@@ -352,15 +352,18 @@ int main(int argc, char *argv[]) {
 //					M.m[2][0], M.m[2][1], M.m[2][2], M.m[2][3], 
 //					M.m[3][0], M.m[3][1], M.m[3][2], M.m[3][3] 
 //			);
-			if (qui_qr_n[0]) {
-				fprintf(stderr, "query[pnts][%d]:\n", qui_qr_n[0]);
-				for (int i = 0; i < qui_qr_n[0]; ++i) {
-					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[0][i].x, qui_qr[0][i].y, qui_qr[0][i].z);
+			if (qui_qr_n[2]) {
+				fprintf(stderr, "query[tris][%d]:\n", qui_qr_n[2]);
+				for (int i = 0; i < qui_qr_n[2]; ++i) {
+					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[2][i].x, qui_qr[2][i].y, qui_qr[2][i].z);
 				}
-				if (qui_qr_n[0]) {
+				if (qui_qr_n[2]) {
 					qui_mtrx_psh(QUI_MTRX_P, P);
 					qui_mtrx_psh(QUI_MTRX_V, V);
-					qui_dots(qui_qr_n[0], qui_qr[0], 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					for (int i = 0; i < qui_qr_n[2]; i += 4) {
+						qui_ngon(3, qui_qr[2] + i, M, (float4_t){ 1.f, 0.725f, 0.625f, 1.f });
+						qui_dots(1, qui_qr[2] + i + 3, 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					}
 					qui_mtrx_pop(QUI_MTRX_V);
 					qui_mtrx_pop(QUI_MTRX_P);
 				}
@@ -373,21 +376,23 @@ int main(int argc, char *argv[]) {
 				if (qui_qr_n[1]) {
 					qui_mtrx_psh(QUI_MTRX_P, P);
 					qui_mtrx_psh(QUI_MTRX_V, V);
-					qui_lns(qui_qr_n[1], qui_qr[1], 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					for (int i = 0; i < qui_qr_n[1]; i += 3) {
+						qui_lns(2, qui_qr[1] + i, 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+						qui_dots(1, qui_qr[1] + i + 2, 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					}
 					qui_mtrx_pop(QUI_MTRX_V);
 					qui_mtrx_pop(QUI_MTRX_P);
 				}
 			}
-			if (qui_qr_n[2]) {
-				fprintf(stderr, "query[tris][%d]:\n", qui_qr_n[2]);
-				for (int i = 0; i < qui_qr_n[2]; ++i) {
-					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[2][i].x, qui_qr[2][i].y, qui_qr[2][i].z);
+			if (qui_qr_n[0]) {
+				fprintf(stderr, "query[pnts][%d]:\n", qui_qr_n[0]);
+				for (int i = 0; i < qui_qr_n[0]; ++i) {
+					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[0][i].x, qui_qr[0][i].y, qui_qr[0][i].z);
 				}
-				if (qui_qr_n[2]) {
+				if (qui_qr_n[0]) {
 					qui_mtrx_psh(QUI_MTRX_P, P);
 					qui_mtrx_psh(QUI_MTRX_V, V);
-					for (int i = 0; i < qui_qr_n[2]; i += 3)
-						qui_ngon(3, qui_qr[2] + i, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					qui_dots(qui_qr_n[0], qui_qr[0], 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
 					qui_mtrx_pop(QUI_MTRX_V);
 					qui_mtrx_pop(QUI_MTRX_P);
 				}

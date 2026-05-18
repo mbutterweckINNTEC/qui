@@ -123,7 +123,7 @@ char *qui_gsh_qr[3] = {
 
 	"#version 440 core"					"\n"
 	"layout(lines) in;"					"\n"
-	"layout(line_strip, max_vertices = 2) out;"		"\n"
+	"layout(points, max_vertices = 3) out;"			"\n"
 	""							"\n"
 	"uniform vec3 o, r;"					"\n"
 	"uniform float R;"					"\n"
@@ -150,14 +150,17 @@ char *qui_gsh_qr[3] = {
 	"			gl_Position = vec4(pb, 1.0);"	"\n"
 	"			xv = pb;"			"\n"
 	"			EmitVertex();"			"\n"
-	"			EndPrimitive();"		"\n"
+	"			vec3 x = s * b + pa;"		"\n"
+	"			gl_Position = vec4(x, 1.0);"	"\n"
+	"			xv = x;"			"\n"
+	"			EmitVertex();"			"\n"
 	"		}"					"\n"
 	"	}"						"\n"
 	"}"							"\n",
 
 	"#version 440 core"					"\n"
 	"layout(triangles) in;"					"\n"
-	"layout(triangle_strip, max_vertices = 3) out;"		"\n"
+	"layout(points, max_vertices = 4) out;"			"\n"
 	""							"\n"
 	"uniform vec3 o, r;"					"\n"
 	"uniform float R;"					"\n"
@@ -187,7 +190,7 @@ char *qui_gsh_qr[3] = {
 	"	float v = dot(r, q) / a;"			"\n"
 	"	if (v < 0.0 || u + v > 1.0)"			"\n"
 	"		return;"				"\n"
-	"	float t = dot(e2, q) / a;"			"\n"
+	"	vec3 x = dot(e2, q) / a * r + o;"		"\n"
 	"	gl_Position = vec4(pa, 1.0);"			"\n"
 	"	xv = pa;"					"\n"
 	"	EmitVertex();"					"\n"
@@ -197,7 +200,9 @@ char *qui_gsh_qr[3] = {
 	"	gl_Position = vec4(pc, 1.0);"			"\n"
 	"	xv = pc;"					"\n"
 	"	EmitVertex();"					"\n"
-	"	EndPrimitive();"				"\n"
+	"	gl_Position = vec4(x, 1.0);"			"\n"
+	"	xv = x;"					"\n"
+	"	EmitVertex();"					"\n"
 	"}"							"\n"
 
 };
