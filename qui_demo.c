@@ -341,6 +341,9 @@ int main(int argc, char *argv[]) {
 			qui_qr_bgn(cr, co, 0.0625, 128, QUI_QR_TYP_LNS);
 			qui_qr_psh_elm(M, cube_bo[0], cube_bo[2], sizeof(cube_j) / sizeof(int), 16, 0); 
 			qui_qr_end();
+			qui_qr_bgn(cr, co, 0.0625, 128, QUI_QR_TYP_TRIS);
+			qui_qr_psh_elm(M, cube_bo[0], cube_bo[1], sizeof(cube_i) / sizeof(int), 16, 0); 
+			qui_qr_end();
 
 
 //			fprintf(stderr, "M:\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n",
@@ -371,6 +374,20 @@ int main(int argc, char *argv[]) {
 					qui_mtrx_psh(QUI_MTRX_P, P);
 					qui_mtrx_psh(QUI_MTRX_V, V);
 					qui_lns(qui_qr_n[1], qui_qr[1], 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+					qui_mtrx_pop(QUI_MTRX_V);
+					qui_mtrx_pop(QUI_MTRX_P);
+				}
+			}
+			if (qui_qr_n[2]) {
+				fprintf(stderr, "query[tris][%d]:\n", qui_qr_n[2]);
+				for (int i = 0; i < qui_qr_n[2]; ++i) {
+					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[2][i].x, qui_qr[2][i].y, qui_qr[2][i].z);
+				}
+				if (qui_qr_n[2]) {
+					qui_mtrx_psh(QUI_MTRX_P, P);
+					qui_mtrx_psh(QUI_MTRX_V, V);
+					for (int i = 0; i < qui_qr_n[2]; i += 3)
+						qui_ngon(3, qui_qr[2] + i, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
 					qui_mtrx_pop(QUI_MTRX_V);
 					qui_mtrx_pop(QUI_MTRX_P);
 				}

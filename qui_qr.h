@@ -134,7 +134,6 @@ int qui_qr_psh_arr(float44_t M, int vbo, int vn, int vstrd, int voff) {
 	return 0;
 }
 
-
 int qui_qr_psh_elm(float44_t M, int vbo, int ebo, int en, int vstrd, int voff) {
 	glUniformMatrix4fv(qui_shdr_qr_M[qui_qr_typ], 1, 0, &M.m[0][0]);
 
