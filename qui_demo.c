@@ -364,15 +364,15 @@ int main(int argc, char *argv[]) {
 						ap = qui_qr[t][i + qui_qr_s[t] - 1];
 					}
 
-					if (0 == t) {
+					switch (t) {
+					case QUI_QR_TYP_PNTS:
 						if (qui_in.prss & QUI_IN_LMB) {
 							as = (float3_t){ 1.f, 0.f, 0.f };
 							at = (float3_t){ 0.f, 1.f, 0.f };
 							an = (float3_t){ 0.f, 0.f, 1.f };
 						}
-					}
-
-					if (1 == t) {
+						break;
+					case QUI_QR_TYP_LNS:
 						qui_lns(2, qui_qr[t] + i, 8, identity_sc, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
 
 						if (qui_in.prss & QUI_IN_LMB) {
@@ -380,9 +380,8 @@ int main(int argc, char *argv[]) {
 							at = normal_float3(cross_float3(cr, as));
 							an = normal_float3(cross_float3(at, as));
 						}
-					}
-
-					if (2 == t) {
+						break;
+					case QUI_QR_TYP_TRIS: {
 						float3_t p[4];
 						memcpy(p, qui_qr[t] + i, sizeof(float3_t) * 3);
 						float3_t u = normal_float3(sub_float3(p[1], p[0]));
@@ -412,7 +411,8 @@ int main(int argc, char *argv[]) {
 						glDisable(GL_POLYGON_OFFSET_FILL);
 						glDisable(GL_DEPTH_TEST);
 						glDepthFunc(GL_LESS);
-					}
+					} break;
+					};
 
 					qui_dots(1, qui_qr[t] + i + qui_qr_s[t] - 1, 16, identity_sc, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
 
