@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 	glClearColor(bg[0], bg[1], bg[2], bg[3]);
 	M_loc_cube = glGetUniformLocation(cube_po, "M");
 
-	glDepthFunc(GL_LESS);
+//	glDepthFunc(GL_GREATER);
 
 	quaternion_t mq = { 1, 0, 0, 0 };
 	float3_t mt = {0, 0, 0};
@@ -326,8 +326,8 @@ int main(int argc, char *argv[]) {
 		glDisable(GL_DEPTH_TEST);
 
 		{
-			float4_t cr_ = { 0, 0, -1, 0 };
-			float4_t co_ = { qui_in.p.x, qui_in.p.y, 1, 1 };
+			float4_t cr_ = { 0, 0, 1, 0 };
+			float4_t co_ = { qui_in.p.x, qui_in.p.y, -1, 1 };
 			float detPV = det_float44(PV);
 			float44_t iPV = invert_float44(PV, detPV);
 			float3_t cr = m_float3(cotransform_float44(iPV, cr_));
@@ -345,59 +345,33 @@ int main(int argc, char *argv[]) {
 			qui_qr_psh_elm(M, cube_bo[0], cube_bo[1], sizeof(cube_i) / sizeof(int), 16, 0); 
 			qui_qr_end();
 
-
 //			fprintf(stderr, "M:\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n\t%f, %f, %f, %f\n",
 //					M.m[0][0], M.m[0][1], M.m[0][2], M.m[0][3], 
 //					M.m[1][0], M.m[1][1], M.m[1][2], M.m[1][3], 
 //					M.m[2][0], M.m[2][1], M.m[2][2], M.m[2][3], 
 //					M.m[3][0], M.m[3][1], M.m[3][2], M.m[3][3] 
 //			);
-			if (qui_qr_n[2]) {
-				fprintf(stderr, "query[tris][%d]:\n", qui_qr_n[2]);
-				for (int i = 0; i < qui_qr_n[2]; ++i) {
-					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[2][i].x, qui_qr[2][i].y, qui_qr[2][i].z);
-				}
-				if (qui_qr_n[2]) {
-					qui_mtrx_psh(QUI_MTRX_P, P);
-					qui_mtrx_psh(QUI_MTRX_V, V);
-					for (int i = 0; i < qui_qr_n[2]; i += 4) {
-						qui_ngon(3, qui_qr[2] + i, M, (float4_t){ 1.f, 0.725f, 0.625f, 1.f });
-						qui_dots(1, qui_qr[2] + i + 3, 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
-					}
-					qui_mtrx_pop(QUI_MTRX_V);
-					qui_mtrx_pop(QUI_MTRX_P);
-				}
-			}
-			if (qui_qr_n[1]) {
-				fprintf(stderr, "query[lns][%d]:\n", qui_qr_n[1]);
-				for (int i = 0; i < qui_qr_n[1]; ++i) {
-					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[1][i].x, qui_qr[1][i].y, qui_qr[1][i].z);
-				}
-				if (qui_qr_n[1]) {
-					qui_mtrx_psh(QUI_MTRX_P, P);
-					qui_mtrx_psh(QUI_MTRX_V, V);
-					for (int i = 0; i < qui_qr_n[1]; i += 3) {
-						qui_lns(2, qui_qr[1] + i, 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
-						qui_dots(1, qui_qr[1] + i + 2, 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
-					}
-					qui_mtrx_pop(QUI_MTRX_V);
-					qui_mtrx_pop(QUI_MTRX_P);
-				}
-			}
-			if (qui_qr_n[0]) {
-				fprintf(stderr, "query[pnts][%d]:\n", qui_qr_n[0]);
-				for (int i = 0; i < qui_qr_n[0]; ++i) {
-					fprintf(stderr, "\t{%f, %f, %f},\n", qui_qr[0][i].x, qui_qr[0][i].y, qui_qr[0][i].z);
-				}
-				if (qui_qr_n[0]) {
-					qui_mtrx_psh(QUI_MTRX_P, P);
-					qui_mtrx_psh(QUI_MTRX_V, V);
-					qui_dots(qui_qr_n[0], qui_qr[0], 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
-					qui_mtrx_pop(QUI_MTRX_V);
-					qui_mtrx_pop(QUI_MTRX_P);
-				}
-			}
 
+			{
+				int t;
+				int i = qui_qr_find(QUI_QR_FND_BST, co, 0.0625, &t);
+
+				if (0 <= i) {
+					qui_mtrx_psh(QUI_MTRX_P, P);
+					qui_mtrx_psh(QUI_MTRX_V, V);
+
+					if (1 == t)
+						qui_lns(2, qui_qr[t] + i, 8, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+
+					if (2 == t)
+						qui_ngon(3, qui_qr[t] + i, M, (float4_t){ 1.f, 0.725f, 0.625f, 1.f });
+
+					qui_dots(1, qui_qr[t] + i + qui_qr_s[t] - 1, 16, M, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
+
+					qui_mtrx_pop(QUI_MTRX_V);
+					qui_mtrx_pop(QUI_MTRX_P);
+				}
+			}
 		}
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);
