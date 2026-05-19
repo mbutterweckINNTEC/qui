@@ -268,6 +268,12 @@ int main(int argc, char *argv[]) {
 		} else {
 			qui_in_rls(QUI_IN_RET);
 		}
+		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
+			qui_in_prss(QUI_IN_M);
+		} else {
+			qui_in_rls(QUI_IN_M);
+		}
+
 		for (int i = 0; i < 10; ++i) {
 			if (glfwGetKey(wndw, GLFW_KEY_0 + i) == GLFW_PRESS || glfwGetKey(wndw, GLFW_KEY_KP_0 + i) == GLFW_PRESS) {
 			qui_in_prss(QUI_IN_0 << i);
@@ -295,7 +301,7 @@ int main(int argc, char *argv[]) {
 		} else {
 			qui_in_rls(QUI_IN_RALT);
 		}
-		if (glfwGetKey(wndw, GLFW_KEY_M) == GLFW_PRESS) {
+		if (glfwGetKey(wndw, GLFW_KEY_S) == GLFW_PRESS) {
 			qui_flgs ^= QUI_FLGS_AA;
 			printf("%s\n", qui_flgs & QUI_FLGS_AA ? "multisample" : "smooth");
 		}
@@ -325,13 +331,14 @@ int main(int argc, char *argv[]) {
 		glDrawElements(GL_TRIANGLES, sizeof(cube_i) / sizeof(int), GL_UNSIGNED_INT, 0);
 		glDisable(GL_DEPTH_TEST);
 
+		float3_t cr, co;
 		{
 			float4_t cr_ = { 0, 0, 1, 0 };
 			float4_t co_ = { qui_in.p.x, qui_in.p.y, -1, 1 };
 			float detPV = det_float44(PV);
 			float44_t iPV = invert_float44(PV, detPV);
-			float3_t cr = m_float3(transform_float44(PV, cr_));
-			float3_t co = float3_float4(cotransform_float44(iPV, co_));
+			cr = m_float3(transform_float44(PV, cr_));
+			co = float3_float4(cotransform_float44(iPV, co_));
 //			fprintf(stderr, "cr = {%f, %f, %f}\n", cr.x, cr.y, cr.z);
 //			fprintf(stderr, "co = {%f, %f, %f}\n", co.x, co.y, co.z);
 			qui_qr_bgn(cr, co, 0.0625, 8, QUI_QR_TYP_PNTS);
@@ -360,13 +367,13 @@ int main(int argc, char *argv[]) {
 					qui_mtrx_psh(QUI_MTRX_P, P);
 					qui_mtrx_psh(QUI_MTRX_V, V);
 
-					if (qui_in.prss & QUI_IN_LMB) {
+					if (qui_in.prss & QUI_IN_LMB && qui_in.prss & QUI_IN_RALT) {
 						ap = qui_qr[t][i + qui_qr_s[t] - 1];
 					}
 
 					switch (t) {
 					case QUI_QR_TYP_PNTS:
-						if (qui_in.prss & QUI_IN_LMB) {
+						if (qui_in.prss & QUI_IN_LMB && qui_in.prss & QUI_IN_RALT) {
 							as = (float3_t){ 1.f, 0.f, 0.f };
 							at = (float3_t){ 0.f, 1.f, 0.f };
 							an = (float3_t){ 0.f, 0.f, 1.f };
@@ -375,7 +382,7 @@ int main(int argc, char *argv[]) {
 					case QUI_QR_TYP_LNS:
 						qui_lns(2, qui_qr[t] + i, 8, identity_sc, (float4_t){ 1.f, 0.25f, 0.125f, 1.f });
 
-						if (qui_in.prss & QUI_IN_LMB) {
+						if (qui_in.prss & QUI_IN_LMB && qui_in.prss & QUI_IN_RALT) {
 							as = normal_float3(sub_float3(qui_qr[t][i], qui_qr[t][i+1]));
 							at = normal_float3(cross_float3(cr, as));
 							an = normal_float3(cross_float3(at, as));
@@ -388,7 +395,7 @@ int main(int argc, char *argv[]) {
 						float3_t v = normal_float3(sub_float3(p[2], p[0]));
 						float3_t w = normal_float3(cross_float3(u, v));
 						v = normal_float3(cross_float3(w, u));
-						if (qui_in.prss & QUI_IN_LMB) {
+						if (qui_in.prss & QUI_IN_LMB && qui_in.prss & QUI_IN_RALT) {
 							as = u;
 							at = v;
 							an = w;
@@ -484,7 +491,13 @@ int main(int argc, char *argv[]) {
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);
 
-		qui_msr2((float3_t){0,0,0}, (float3_t){1,1,1}, (float3_t){0,0,1}, 0.025, 0.1, (float4_t){1,1,1,1});
+//		qui_msr_drwln((float3_t){0,0,0}, (float3_t){1,1,1}, (float3_t){0,0,1}, 0.025, 0.1, (float4_t){1,1,1,1});
+
+		qui_msr_set(QUI_MSR_MNR, 0.01);
+		qui_msr_set(QUI_MSR_MYR, 0.1);
+		qui_msr_set(QUI_MSR_ARRWHD, 0.025);
+		qui_msr_set(QUI_MSR_FNTH, 0.035);
+		qui_msr(cr, co);
 
 		qui_mtrx_pop(QUI_MTRX_V);
 		qui_mtrx_pop(QUI_MTRX_P);
