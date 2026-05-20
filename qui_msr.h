@@ -171,13 +171,16 @@ int qui_msr_drw_rlr(float3_t pa, float3_t pb, float3_t n) {
 	return 0;
 }
 
-int qui_msr_drw_ang(float3_t p[3]) {
+int qui_msr_drw_ang(float3_t p[3], float3_t rd) {
 	qui_plln(3, p, 1, identity_sc, qui_msr_clr);
 
 	if (!equal_float3(p[1], p[2])) {
 		float3_t u_ = normal_float3(sub_float3(p[0], p[1]));
 		float3_t v_ = normal_float3(sub_float3(p[2], p[1]));
+		float3_t w_ = cross_float3(u_, v_);
 		float cang = dot_float3(u_, v_);
+		float sang = length_float3(w_);
+		float dang = 180.f / M_PI * atan2(sang, cang);
 		float R = (2.f - sqrt(0.5f + 0.5f * cang));
 		float3_t u = scale_float3(u_, 2.f * qui_msr_fnth);
 		float3_t v = scale_float3(v_, 2.f * qui_msr_fnth);
@@ -189,7 +192,35 @@ int qui_msr_drw_ang(float3_t p[3]) {
 		};
 
 		qui_bzr(3, c, 1, identity_sc, qui_msr_clr);
-		/* todo: value */
+
+		float sgn = dot_float3(w_, rd) < 0 ? 1.f : -1.f;
+
+		char a[32];
+		sprintf(a, "%.1f°", dang);
+		float3_t pt = add_float3(p[1], r);
+		float3_t st = scale_float3(normal_float3(sub_float3(c[2], c[0])), sgn * qui_msr_fnth);
+		float3_t tt = scale_float3(normal_float3(r), qui_msr_fnth);
+
+		float44_t P = qui_mtrx_top(QUI_MTRX_P);
+		float44_t V = qui_mtrx_top(QUI_MTRX_V);
+		float44_t PV = mul_float44(V, P);
+		float3_t tt_ = float3_float4(cotransform_float44(PV, m_float4(tt, 0.f)));
+
+		if (tt_.y < 0.f) {
+			tt = scale_float3(tt, -1.f);
+			st = scale_float3(st, -1.f);
+			pt = add_float3(pt, scale_float3(normal_float3(r), qui_msr_fnth));
+		}
+
+		float3_t rt = scale_float3(normal_float3(w_), qui_msr_fnth);
+		float44_t T = {
+			st.x, st.y, st.z, 0.f,
+			tt.x, tt.y, tt.z, 0.f,
+			rt.x, rt.y, rt.z, 0.f,
+			pt.x - 0.5f * qui_msr_fnth * qui_txt_len(a), pt.y, pt.z, 1.f
+		};
+		qui_txt(a, T, qui_msr_clr);
+
 	}
 
 	return 0;
@@ -199,21 +230,50 @@ int qui_msr_drw_prtrctr(float3_t p[]) {
 	qui_plln(3, p, 1, identity_sc, qui_msr_clr);
 
 	if (!equal_float3(p[1], p[2])) {
-		float3_t u_ = normal_float3(sub_float3(p[0], p[1]));
+		float3_t _u = sub_float3(p[0], p[1]);
+		float lu = length_float3(_u);
+		float3_t u_ = normal_float3(_u);
 		float3_t v_ = normal_float3(sub_float3(p[2], p[1]));
+		float3_t w_ = cross_float3(u_, v_);
 		float cang = dot_float3(u_, v_);
-		float R = (2.f - sqrt(0.5f + 0.5f * cang));
-		float3_t u = scale_float3(u_, 2.f * qui_msr_fnth);
-		float3_t v = scale_float3(v_, 2.f * qui_msr_fnth);
-		float3_t r = scale_float3(normal_float3(add_float3(u, v)), 2.f * R * qui_msr_fnth);
-		float3_t c[3] = {
-			add_float3(p[1], u),
-			add_float3(p[1], r),
-			add_float3(p[1], v),
-		};
+		float sang = length_float3(w_);
+		float ang = atan2(sang, cang);
+		float dang = 180.f / M_PI * ang;
+		w_ = scale_float3(w_, 1.f / sang);
 
-		qui_bzr(3, c, 1, identity_sc, qui_msr_clr);
-		/* todo: scale */
+		float3_t sp[2* (181 + 13)];
+		int sp_n = 0;
+
+		for (int i = 0; i <= dang; ++i) {
+			quaternion_t q = axis_angle_to_quaternion(w_, i * M_PI / 180.f);
+
+			float3_t ua = transform_quaternion(q, _u);
+			if (sp_n + 2 <= sizeof(sp)/sizeof(sp[0])) {
+				sp[sp_n++] = add_float3(p[1], scale_float3(ua, 0.5));
+				sp[sp_n++] = add_float3(p[1], scale_float3(ua, 0.25));
+			}
+		}
+		for (int i = 0; i <= dang; i+=15) {
+			quaternion_t q = axis_angle_to_quaternion(w_, i * M_PI / 180.f);
+			float3_t ua = transform_quaternion(q, _u);
+			if (sp_n + 2 <= sizeof(sp)/sizeof(sp[0])) {
+				sp[sp_n++] = add_float3(p[1], scale_float3(ua, 0.25));
+				sp[sp_n++] = p[1];
+			}
+		}
+
+		qui_lns(sp_n, sp, 1, identity_sc, qui_msr_clr);
+
+		char a[32];
+		sprintf(a, "%.1f°", dang);
+		float3_t pt = add_float3(p[2], scale_float3(u_, qui_msr_fnth));
+		float44_t T = {
+			qui_msr_fnth, 0.f, 0.f, 0.f,
+			0.f, qui_msr_fnth, 0.f, 0.f,
+			0.f, 0.f, qui_msr_fnth, 0.f,
+			pt.x, pt.y, pt.z, 1.f
+		};
+		qui_txt(a, T, qui_msr_clr);
 	}
 
 	return 0;
@@ -334,7 +394,7 @@ int qui_msr(float3_t r, float3_t o) {
 			qui_msr_drw_ln(qui_msr_p[i], n);
 			break; 
 		case 3:
-			qui_msr_drw_ang(qui_msr_p[i]);
+			qui_msr_drw_ang(qui_msr_p[i], r);
 			break;
 		};
 	}
