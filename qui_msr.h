@@ -9,7 +9,7 @@ enum {
 	QUI_MSR_SNP,	/* snap distance: double */
 	QUI_MSR_ARRWHD,	/* arrow head length: double*/
 	QUI_MSR_FNTH,	/* arrow head length: double*/
-	QUI_MSR_PSNP,	/* external snap point (eg. cursor), will reset after qui_msr: float3_t */
+	QUI_MSR_PSNP,	/* external snap point (eg. cursor): float3_t */
 };
 
 int qui_msr_set(int param, ...);
@@ -325,8 +325,19 @@ int qui_msr_drw_x(float3_t o) {
 }
 
 float3_t qui_msr_qr(float3_t r, float3_t o, float R) {
-	float3_t p = { qui_in.p.x, qui_in.p.y, 0.f };
+	float3_t p = { 0.f, 0.f, 0.f };
+	float3_t pi = { qui_in.p.x, qui_in.p.y, 0.f };
 	int qrt, qri;
+
+	/* mid frustum plane */ {
+		float44_t P = qui_mtrx_top(QUI_MTRX_P);
+		float44_t V = qui_mtrx_top(QUI_MTRX_V);
+		float44_t PV = mul_float44(V, P);
+		float detPV = det_float44(PV);
+		float44_t iPV = invert_float44(PV, detPV);
+
+		p = float3_float4(cotransform_float44(iPV, m_float4(pi, 1.f)));
+	}
 
 	if (qui_msr_q_snp.x != FLT_MAX) {
 		float qp = length_float3(cross_float3(sub_float3(o, qui_msr_q_snp), normal_float3(r)));
@@ -390,7 +401,6 @@ int qui_msr(float3_t r, float3_t o, float R) {
 			qui_msr_st = QUI_MSR_ST_RDY;
 			break;
 		}
-//		qui_msr_q_snp.x = FLT_MAX;
 		return 0;
 	case QUI_MSR_ST_RDY:
 		qui_msr_drw_x(o);
@@ -454,7 +464,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 		break;
 	};
 
-	float3_t n = normal_float3(r);//qui_msr_vwn();
+	float3_t n = normal_float3(r);
 
 	for (int i = 0; i < qui_msr_n; ++i) {
 		switch (qui_msr_pn[i]) {
@@ -489,8 +499,6 @@ int qui_msr(float3_t r, float3_t o, float R) {
 		float3_t p[3] = { qui_msr_p[qui_msr_n][0], qui_msr_p[qui_msr_n][1], qui_msr_qr(r, o, R) };
 		qui_msr_drw_prtrctr(p);
 	}
-
-//	qui_msr_q_snp.x = FLT_MAX;
 
 	return 1;
 }
