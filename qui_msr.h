@@ -35,6 +35,7 @@ float3_t qui_msr_p[QUI_MSR_N][3];
 int qui_msr_n;
 int qui_msr_pn[QUI_MSR_N];
 float3_t qui_msr_p_snp = {FLT_MAX};
+float3_t qui_msr_q_snp = {FLT_MAX};
 
 float qui_msr_mnr = 1.f, qui_msr_myr = 10.f, qui_msr_snp = 0.0625f, qui_msr_arrwhd = 2.5, qui_msr_fnth = 3.5;
 float4_t qui_msr_clr = { 1.f, 1.f, 1.f, 1.f };
@@ -327,12 +328,18 @@ float3_t qui_msr_qr(float3_t r, float3_t o, float R) {
 	float3_t p = { qui_in.p.x, qui_in.p.y, 0.f };
 	int qrt, qri;
 
+	if (qui_msr_q_snp.x != FLT_MAX) {
+		float qp = length_float3(cross_float3(sub_float3(o, qui_msr_q_snp), normal_float3(r)));
+		if (qp < R)
+			p = qui_msr_q_snp;
+	}
+
 	{
 		float qp = length_float3(cross_float3(sub_float3(o, qui_msr_p_snp), normal_float3(r)));
-		if (qp < R)
+		if (qp < R) {
 			p = qui_msr_p_snp;
-		else
-			qui_msr_p_snp.x = FLT_MAX;
+			qui_msr_q_snp = qui_msr_p_snp;
+		}
 	}
 
 	if (0 > (qri = qui_qr_find(QUI_QR_FND_BST, o, qui_msr_snp, &qrt)))
@@ -351,8 +358,8 @@ float3_t qui_msr_qr(float3_t r, float3_t o, float R) {
 
 		if (qp < R) {
 			p = pN;
-			qui_msr_p_snp = pN;
 		}
+		qui_msr_q_snp = pN;
 	}
 end:
 	return p;
@@ -365,7 +372,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 			qui_msr_st = QUI_MSR_ST_RDY;
 			break;
 		}
-		qui_msr_p_snp.x = FLT_MAX;
+//		qui_msr_q_snp.x = FLT_MAX;
 		return 0;
 	case QUI_MSR_ST_RDY:
 		qui_msr_drw_x(o);
@@ -443,7 +450,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 		if (qui_msr_st == QUI_MSR_ST_RDY)
 			qui_msr_qr(r, o, R);
 		if (qui_msr_p_snp.x != FLT_MAX)
-			qui_dots(1, &qui_msr_p_snp, 12, identity_sc, qui_msr_clr);
+			qui_dots(1, &qui_msr_q_snp, 12, identity_sc, qui_msr_clr);
 	}
 
 	if (qui_msr_st == QUI_MSR_ST_ANG && qui_msr_pn[qui_msr_n] == 2) {
@@ -451,7 +458,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 		qui_msr_drw_prtrctr(p);
 	}
 
-	qui_msr_p_snp.x = FLT_MAX;
+//	qui_msr_q_snp.x = FLT_MAX;
 
 	return 1;
 }
