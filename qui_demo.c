@@ -497,7 +497,7 @@ int main(int argc, char *argv[]) {
 		qui_msr_set(QUI_MSR_MYR, 0.1);
 		qui_msr_set(QUI_MSR_ARRWHD, 0.025);
 		qui_msr_set(QUI_MSR_FNTH, 0.035);
-		qui_msr(cr, co);
+		qui_msr(cr, co, 0.0625);
 
 		qui_mtrx_pop(QUI_MTRX_V);
 		qui_mtrx_pop(QUI_MTRX_P);
