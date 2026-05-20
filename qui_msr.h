@@ -355,7 +355,25 @@ float3_t qui_msr_qr(float3_t r, float3_t o, float R) {
 		float3_t k = sub_float3(qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]-1], qui_qr[qrt][qri]);
 		float3_t pN = add_float3(scale_float3(l, dot_float3(l, k)), qui_qr[qrt][qri]);
 		float qp = length_float3(cross_float3(sub_float3(o, pN), normal_float3(r)));
-
+		if (qp < R) {
+			p = pN;
+		}
+		qui_msr_q_snp = pN;
+	}
+	if (qrt == QUI_QR_TYP_TRIS &&
+		(qui_msr_st == QUI_MSR_ST_LN || qui_msr_st == QUI_MSR_ST_ANG) &&
+		qui_msr_n < QUI_MSR_N && qui_msr_pn[qui_msr_n]
+	) {
+		float3_t so = qui_qr[qrt][qri];
+		float3_t sn = normal_float3(
+			cross_float3(
+				sub_float3(qui_qr[qrt][qri], qui_qr[qrt][qri+1]),
+				sub_float3(qui_qr[qrt][qri], qui_qr[qrt][qri+2])
+			)
+		);
+		float3_t mp = qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]-1]; 
+		float3_t pN = sub_float3(mp, scale_float3(sn, dot_float3(sn, sub_float3(mp, so))));
+		float qp = length_float3(cross_float3(sub_float3(o, pN), normal_float3(r)));
 		if (qp < R) {
 			p = pN;
 		}
@@ -400,6 +418,12 @@ int qui_msr(float3_t r, float3_t o, float R) {
 			qui_msr_n++;
 			qui_msr_st = QUI_MSR_ST_RDY;
 		}
+		if (qui_in.rls & QUI_IN_RET && qui_msr_q_snp.x != FLT_MAX) {
+			qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]] = qui_msr_q_snp;
+			++qui_msr_pn[qui_msr_n];
+			qui_msr_n++;
+			qui_msr_st = QUI_MSR_ST_RDY;
+		}
 		if (qui_in.rls & QUI_IN_BCK && qui_msr_pn[qui_msr_n])
 			--qui_msr_pn[qui_msr_n];
 		if (qui_in.rls & QUI_IN_ESC)
@@ -410,6 +434,14 @@ int qui_msr(float3_t r, float3_t o, float R) {
 			qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]] = qui_msr_qr(r, o, R);
 			++qui_msr_pn[qui_msr_n];
 
+			if (qui_msr_pn[qui_msr_n] == 3) {
+				++qui_msr_n;
+				qui_msr_st = QUI_MSR_ST_RDY;
+			}
+		}
+		if (qui_in.rls & QUI_IN_RET && qui_msr_q_snp.x != FLT_MAX) {
+			qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]] = qui_msr_q_snp;
+			++qui_msr_pn[qui_msr_n];
 			if (qui_msr_pn[qui_msr_n] == 3) {
 				++qui_msr_n;
 				qui_msr_st = QUI_MSR_ST_RDY;
