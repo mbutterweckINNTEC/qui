@@ -1,8 +1,12 @@
 #ifndef QUI_SHDR_H
 #define QUI_SHDR_H
 
+/* This makes trick to remove memory barriers between draw calls but it is kinda dangerous.
+ * Comment out ofr safe version. */
+#define QUI_SHDR_VOLATILE_OPT
+
 extern int qui_shdr_po, qui_shdr_M;
-extern int qui_shdr_qr_po[3], qui_shdr_qr_M[3], qui_shdr_qr_o[3], qui_shdr_qr_r[3], qui_shdr_qr_R[3];
+extern int qui_shdr_qr_po[3], qui_shdr_qr_M[3], qui_shdr_qr_o[3], qui_shdr_qr_r[3], qui_shdr_qr_R[3], qui_shdr_qr_unt;
 
 int qui_shdr_mk();
 int qui_shdr_rm();
@@ -10,7 +14,7 @@ int qui_shdr_rm();
 #ifdef QUI_IMPL
 
 int qui_shdr_po, qui_shdr_M;
-int qui_shdr_qr_po[3], qui_shdr_qr_M[3], qui_shdr_qr_o[3], qui_shdr_qr_r[3], qui_shdr_qr_R[3];
+int qui_shdr_qr_po[3], qui_shdr_qr_M[3], qui_shdr_qr_o[3], qui_shdr_qr_r[3], qui_shdr_qr_R[3], qui_shdr_qr_unt;
 
 static int shdr_bld(int n, char  const *shsrc[], int shtyp[], char *tfvar) {
 	char log[4096];
@@ -98,9 +102,19 @@ char *qui_gsh_qr[3] = {
 	"#version 440 core"					"\n"
 	"layout(points) in;"					"\n"
 	"layout(points, max_vertices = 1) out;"			"\n"
+	"layout(std430, binding = 0) "
+#ifdef QUI_SHDR_VOLATILE_OPT
+	"volatile"
+#else /* QUI_SHDR_VOLATILE_OPT */
+	"coherent"
+#endif /* QUI_SHDR_VOLATILE_OPT */
+	" buffer globals {"					"\n"
+	"	int h;"						"\n"
+	"};"							"\n"
 	""							"\n"
 	"uniform vec3 o, r;"					"\n"
 	"uniform float R;"					"\n"
+	"uniform float unt;"					"\n"
 	""							"\n"
 	"out vec3 xv;"						"\n"
 	""							"\n"
@@ -108,6 +122,7 @@ char *qui_gsh_qr[3] = {
 	"void main() {"						"\n"
 	"	vec3 p = gl_in[0].gl_Position.xyz /"		"\n"
 	"		gl_in[0].gl_Position.w;"		"\n"
+	"	atomicMax(h, int(unt * p.z));"			"\n"
 	"	vec3 s = p - o;"				"\n"
 	"	float l = dot(s, r);"				"\n"
 	"	if (0 < l) {"					"\n"
@@ -227,18 +242,13 @@ int qui_shdr_mk() {
 		if (!qui_shdr_qr_po[i])
 			return -1;
 
-		if (-1 == (qui_shdr_qr_M[i] = glGetUniformLocation(qui_shdr_qr_po[i], "M")))
-			return -1;
-
-		if (-1 == (qui_shdr_qr_o[i] = glGetUniformLocation(qui_shdr_qr_po[i], "o")))
-			return -1;
-
-		if (-1 == (qui_shdr_qr_r[i] = glGetUniformLocation(qui_shdr_qr_po[i], "r")))
-			return -1;
-
-		if (-1 == (qui_shdr_qr_R[i] = glGetUniformLocation(qui_shdr_qr_po[i], "R")))
-			return -1;
+		qui_shdr_qr_M[i] = glGetUniformLocation(qui_shdr_qr_po[i], "M");
+		qui_shdr_qr_o[i] = glGetUniformLocation(qui_shdr_qr_po[i], "o");
+		qui_shdr_qr_r[i] = glGetUniformLocation(qui_shdr_qr_po[i], "r");
+		qui_shdr_qr_R[i] = glGetUniformLocation(qui_shdr_qr_po[i], "R");
 	}
+
+	qui_shdr_qr_unt = glGetUniformLocation(qui_shdr_qr_po[0], "unt");
 
 	return 0;
 }

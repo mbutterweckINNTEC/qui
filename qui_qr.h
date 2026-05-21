@@ -15,6 +15,9 @@ extern float3_t *qui_qr[3];
 extern int qui_qr_n[3];
 static int const qui_qr_s[3] = { 1, 3, 4 };
 
+extern float qui_qr_h;
+extern float qui_qr_unt;
+
 enum {
 	QUI_QR_FND_NRST_PNT = 0x1,
 	QUI_QR_FND_NRST_LN = 0x2,
@@ -33,10 +36,12 @@ int qui_qr_find(int fnd, float3_t o, float r, int *typ /*out*/);
 #ifdef QUI_IMPL
 
 int qui_qr_typ;
-int qui_qr_xo, qui_qr_xbo[3], qui_qr_qo, qui_qr_vao, qui_qr_n[3], qui_qr_sz[3];
+int qui_qr_xo, qui_qr_xbo[3], qui_qr_qo, qui_qr_vao, qui_qr_n[3], qui_qr_sz[3], qui_qr_ssbo;
 float3_t *qui_qr[3];
 float3_t qui_qr_r, qui_qr_o;
 float qui_qr_R;
+float qui_qr_h;
+float qui_qr_unt = 4096.f;
 
 int qui_qr_ini() {
 	if (!qui_qr_qo)
@@ -53,6 +58,9 @@ int qui_qr_ini() {
 
 	if (!qui_qr_xbo[0])
 		glGenBuffers(3, qui_qr_xbo);
+
+	if (!qui_qr_ssbo)
+		glGenBuffers(1, &qui_qr_ssbo);
 
 	if (!qui_qr_xbo[0])
 		goto ouch;
@@ -73,6 +81,9 @@ ouch:
 
 	if (qui_qr_xbo[0])
 		glDeleteBuffers(3, qui_qr_xbo);
+
+	if (qui_qr_ssbo)
+		glDeleteBuffers(1, &qui_qr_ssbo);
 
 	if (qui_qr_vao)
 		glDeleteVertexArrays(1, &qui_qr_vao);
@@ -101,6 +112,13 @@ int qui_qr_bgn(float3_t r, float3_t o, float R, int sz, int typ) {
 		glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, qui_qr_sz[typ] * sizeof(float) * 3, NULL, GL_DYNAMIC_READ);
 	}
 
+	if (typ == QUI_QR_TYP_PNTS) {
+		int hmin = INT_MIN;
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, qui_qr_ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, 4, &hmin,  GL_DYNAMIC_READ);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, qui_qr_ssbo);
+	}
+
 	glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, qui_qr_qo);
 
 	glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, qui_qr_xbo[typ], 0, qui_qr_sz[typ] * sizeof(float) * 3);
@@ -109,6 +127,9 @@ int qui_qr_bgn(float3_t r, float3_t o, float R, int sz, int typ) {
 	glUniform3f(qui_shdr_qr_o[typ], qui_qr_o.x, qui_qr_o.y, qui_qr_o.z);
 	glUniform3f(qui_shdr_qr_r[typ], qui_qr_r.x, qui_qr_r.y, qui_qr_r.z);
 	glUniform1f(qui_shdr_qr_R[typ], qui_qr_R);
+	if (typ == QUI_QR_TYP_PNTS) {
+		glUniform1f(qui_shdr_qr_unt, qui_qr_unt);
+	}
 
 	glBeginTransformFeedback(GL_POINTS);
 
@@ -128,7 +149,12 @@ int qui_qr_psh_arr(float44_t M, int vbo, int vn, int vstrd, int voff) {
 	int gltyp;
 
 	switch (qui_qr_typ) {
-	case QUI_QR_TYP_PNTS: gltyp = GL_POINTS; break;
+	case QUI_QR_TYP_PNTS:
+#ifdef QUI_SHDR_VOLATILE_OPT
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+#endif /* QUI_SHDR_VOLATILE_OPT */
+		gltyp = GL_POINTS;
+		break;
 	case QUI_QR_TYP_LNS: gltyp = GL_LINES; break;
 	case QUI_QR_TYP_TRIS: gltyp = GL_TRIANGLES; break;
 	default:
@@ -152,7 +178,12 @@ int qui_qr_psh_elm(float44_t M, int vbo, int ebo, int en, int vstrd, int voff) {
 	int gltyp;
 
 	switch (qui_qr_typ) {
-	case QUI_QR_TYP_PNTS: gltyp = GL_POINTS; break;
+	case QUI_QR_TYP_PNTS:
+#ifdef QUI_SHDR_VOLATILE_OPT
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+#endif /* QUI_SHDR_VOLATILE_OPT */
+		gltyp = GL_POINTS;
+		break;
 	case QUI_QR_TYP_LNS: gltyp = GL_LINES; break;
 	case QUI_QR_TYP_TRIS: gltyp = GL_TRIANGLES; break;
 	default:
@@ -171,8 +202,16 @@ int qui_qr_end() {
 	glEndTransformFeedback();
 	glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
 	glGetQueryObjectiv(qui_qr_qo, GL_QUERY_RESULT, &qui_qr_n[qui_qr_typ]);
-//	qui_qr_n[qui_qr_typ] *= qui_qr_typ + 1;
 	qui_qr[qui_qr_typ] = glMapNamedBuffer(qui_qr_xbo[qui_qr_typ], GL_READ_ONLY);
+	if (qui_qr_typ == QUI_QR_TYP_PNTS) {
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		int *h = glMapNamedBuffer(qui_qr_ssbo, GL_READ_WRITE);
+		qui_qr_h = 0;
+		if (h) {
+			qui_qr_h = (float)(*h) / qui_qr_unt;
+			glUnmapNamedBuffer(qui_qr_ssbo);
+		}
+	}
 
 	return 0;
 }

@@ -342,6 +342,10 @@ int main(int argc, char *argv[]) {
 //			fprintf(stderr, "cr = {%f, %f, %f}\n", cr.x, cr.y, cr.z);
 //			fprintf(stderr, "co = {%f, %f, %f}\n", co.x, co.y, co.z);
 			qui_qr_bgn(cr, co, 0.0625, 8, QUI_QR_TYP_PNTS);
+/*			for (int i = 0; i < 100; ++i) {
+				float44_t T = cotranslation_float44((float3_t){0, 0, i});
+			qui_qr_psh_arr(mul_float44(M, T), cube_bo[0], cube_v_n, 16, 0); 
+			}*/
 			qui_qr_psh_arr(M, cube_bo[0], cube_v_n, 16, 0); 
 			qui_qr_end();
 
@@ -427,6 +431,10 @@ int main(int argc, char *argv[]) {
 					qui_mtrx_pop(QUI_MTRX_P);
 				}
 			}
+		qui_tip_bgn();
+			printf("h = %f\n", qui_qr_h);
+			qui_val_f(cotranslation_float44((float3_t){0, -0.75, 0}), (float3_t){1, 1, 1}, "H", "-", &qui_qr_h, 0);
+		qui_tip_end("height");
 		}
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);
