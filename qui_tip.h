@@ -15,7 +15,7 @@ enum {
 };
 
 extern int qui_tip_sgnl;
-int qui_tip_msk;
+extern int qui_tip_msk;
 
 #ifdef QUI_IMPL
 
