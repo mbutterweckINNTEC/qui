@@ -133,9 +133,10 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n, int lnwdth) {
 		0.f, 0.f, fVM, 0.f,
 		VM.m30, VM.m31, VM.m32, 1.f
 	};
+	float44_t S = qui_mtrx_top(QUI_MTRX_S);
 	float44_t PV = mul_float44(V, P);
-	float44_t PVM = mul_float44(M, PV);
-	float44_t PB = mul_float44(B, P);
+	float44_t PVM = mul_float44(S, mul_float44(M, PV));
+	float44_t PB = mul_float44(S,mul_float44(B, P));
 
 	glUseProgram(qui_shdr_po);
 	glBindVertexArray(qui_aim_vao);
