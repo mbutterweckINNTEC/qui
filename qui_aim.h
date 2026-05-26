@@ -1,7 +1,10 @@
 #ifndef QUI_AIM_H
 #define QUI_AIM_H
 
-int qui_aim(float3_t *p, float3_t *n, float3_t *s, float3_t *t, int lnwdth);
+int qui_aim(float3_t *p, float3_t *n, float3_t *s, float3_t *t);
+
+extern float qui_aim_R;
+extern float qui_aim_lnwdth;
 
 /* PRIV */
 
@@ -11,6 +14,9 @@ int qui_aim_rm();
 #ifdef QUI_IMPL
 
 int qui_aim_vbo, qui_aim_vao;
+
+float qui_aim_R = 0.03125f;
+float qui_aim_lnwdth = 1;
 
 #define QUI_AIM_N 32
 
@@ -116,7 +122,7 @@ int qui_aim_rm() {
 	return 0;
 }
 
-int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n, int lnwdth) {
+int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
 	float44_t V = qui_mtrx_top(QUI_MTRX_V);
 	float44_t M = {
@@ -140,7 +146,7 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n, int lnwdth) {
 
 	glUseProgram(qui_shdr_po);
 	glBindVertexArray(qui_aim_vao);
-	glLineWidth(lnwdth);
+	glLineWidth(qui_aim_lnwdth);
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(0);
 	glPolygonOffset(0, -16);
@@ -159,43 +165,42 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n, int lnwdth) {
 	glLineWidth(1);
 
 	if (qui_in.prss & QUI_IN_RALT) {
-		if (qui_in.rls & QUI_IN_LMB) {
+		if (qui_in.prss & QUI_IN_LMB) {
+			int k, typ = 0;
+ 
 			float detPV = det_float44(PV);
-			if (detPV) {
-				float44_t iPV = invert_float44(PV, detPV);
+                        float44_t iPV = invert_float44(PV, detPV);
+                        float3_t o = float3_float4(cotransform_float44(iPV, (float4_t){ qui_in.p.x, qui_in.p.y, -1, 1 }));
+                        float3_t r = m_float3(cotransform_float44(iPV, (float4_t){ 0, 0, 1, 0 }));
 
-				int vw[4], x, y;
-				float z = 0.f, zr = 0.f, zu = 0.f, nf[2] = { 0.f, 1.f };
-				glGetIntegerv(GL_VIEWPORT, vw);
-				glGetFloatv(GL_DEPTH_RANGE, nf);
-
-				x = vw[0] + fmaxf(0.f, 0.5f * qui_in.p.x + 0.5f) * vw[2];
-				y = vw[1] + fmaxf(0.f, 0.5f * qui_in.p.y + 0.5f) * vw[3];
-
-				glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z);
-				glReadPixels(x+8, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zr);
-				glReadPixels(x, y+8, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zu);
-
-				float4_t ps = { qui_in.p.x, qui_in.p.y, 2.0 * (nf[0] + z * (nf[1] - nf[0])) - 1.f, 1.f };
-				float4_t prs = { 2.f * (x + 8 - vw[0]) / vw[2] - 1.f, qui_in.p.y, 2.0 * (nf[0] + zr * (nf[1] - nf[0])) - 1.f, 1.f };
-				float4_t pus = { qui_in.p.x, 2.f * (y + 8 - vw[1]) / vw[3] - 1.f, 2.0 * (nf[0] + zu * (nf[1] - nf[0])) - 1.f, 1.f };
-
-				*p = float3_float4(cotransform_float44(iPV, ps));
-				float3_t u_ = float3_float4(cotransform_float44(iPV, pus));
-				float3_t r_ = float3_float4(cotransform_float44(iPV, prs));
-
-				*s = normal_float3(sub_float3(r_, *p));
-				*t = normal_float3(sub_float3(u_, *p));
-				*n = normal_float3(cross_float3(*s, *t));
-				*t = normal_float3(cross_float3(*n, *s));
-
+			k = qui_qr_find(QUI_QR_FND_BST, o, qui_aim_R, &typ);
+			if (0 <= k) {
+				*p = qui_qr[typ][k + qui_qr_s[typ] - 1];
+				switch (typ) {
+				case QUI_QR_TYP_PNTS:
+					*s = (float3_t) { 1, 0, 0 };
+					*t = (float3_t) { 0, 1, 0 };
+					*n = (float3_t) { 0, 0, 1 };
+					break;
+				case QUI_QR_TYP_LNS:
+					*s = normal_float3(sub_float3(qui_qr[typ][k], qui_qr[typ][k+1]));
+					*t = normal_float3(cross_float3(*s, r));
+					*n = normal_float3(cross_float3(*t, *s));
+					break;
+				case QUI_QR_TYP_TRIS:
+					*n = normal_float3(cross_float3(sub_float3(qui_qr[typ][k], qui_qr[typ][k+1]), sub_float3(qui_qr[typ][k+1], qui_qr[typ][k+2])));
+					*s = normal_float3(cross_float3(*n, r));
+					*t = normal_float3(cross_float3(*n, *s));
+					break;
+				default:
+					return 0;
+				}
 				return 1;
 			}
 		}
 
 		if (qui_in.s) {
 			*p = add_float3(*p, scale_float3(*n, qui_in.s / fVM * 0.03125));
-			printf("sc = %f\n", qui_in.s);
 		}
 	}
 

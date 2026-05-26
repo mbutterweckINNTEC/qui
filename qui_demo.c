@@ -444,7 +444,7 @@ int main(int argc, char *argv[]) {
 		}
 		qui_tip_end("Move/rotate/scale");
 
-		qui_aim(&ap, &as, &at, &an, 3);
+		qui_aim(&ap, &as, &at, &an);
 	
 		qui_mtrx_pop(QUI_MTRX_V);
 
