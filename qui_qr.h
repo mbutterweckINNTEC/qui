@@ -9,6 +9,7 @@ enum {
 
 int qui_qr_bgn(float3_t r, float3_t o, float R, int sz, int typ);
 int qui_qr_psh_arr(float44_t M, int vbo, int vn, int vstrd, int voff);
+int qui_qr_psh_elm(float44_t M, int vbo, int ebo, int en, int vstrd, int voff);
 int qui_qr_end();
 
 extern float3_t *qui_qr[3];
