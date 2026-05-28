@@ -68,6 +68,7 @@ int qui_in_prss(int bttn) {
 }
 
 int qui_in_rls(int bttn) {
+	qui_in.rls &=~ bttn;
 	qui_in.rls |= qui_in.prss & bttn;
 	qui_in.prss &=~ bttn;
 
