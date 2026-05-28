@@ -10,6 +10,7 @@ enum {
 	QUI_MSR_ARRWHD,	/* arrow head length: double*/
 	QUI_MSR_FNTH,	/* arrow head length: double*/
 	QUI_MSR_PSNP,	/* external snap point (eg. cursor): float3_t */
+	QUI_MSR_RDY,	/* set ready, no idle: int */
 };
 
 int qui_msr_set(int param, ...);
@@ -297,6 +298,10 @@ int qui_msr_set(int param, ...) {
 	case QUI_MSR_ARRWHD:	qui_msr_arrwhd = va_arg(ap, double);	break;
 	case QUI_MSR_FNTH:	qui_msr_fnth = va_arg(ap, double);	break;
 	case QUI_MSR_PSNP:	qui_msr_p_snp = va_arg(ap, float3_t);	break;
+	case QUI_MSR_RDY:
+		if (qui_msr_st == QUI_MSR_ST_IDL)
+			qui_msr_st = QUI_MSR_ST_RDY;
+		break;
 	default:
 		err = -1;
 	};
