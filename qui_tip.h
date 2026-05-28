@@ -25,7 +25,7 @@ char *qui_tip_id;
 time_t qui_tip_tm;
 
 float4_t qui_tip_clr = {0, 0, 0, 1};
-float const qui_tip_scl = 0.03125;
+float const qui_tip_scl = 0.05;
 
 int qui_tip_tst(char *id) {
 	if (qui_tip_sgnl & QUI_TIP_SGNL_FCS) {
@@ -49,7 +49,7 @@ int qui_tip_tst(char *id) {
 void qui_tip_end(char *tip) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
 	float detP = det_float44(P);
-	float4_t p = { -0.925,-0.925 };
+	float4_t p = { -0.5,-0.925 };
 
 	if (detP) {
 		float44_t iP = invert_float44(P, detP);
@@ -74,15 +74,15 @@ void qui_tip_end(char *tip) {
 void qui_tip_end2(char *tip0, char *tip1) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
 	float detP = det_float44(P);
-	float4_t pu = { -0.925,-0.925 };
-	float4_t pb = { -0.925,-0.95 };
+	float4_t pu = { -0.5,-0.925 };
+	float4_t pb = { -0.5,-0.925 - qui_tip_scl};
 
 	if (detP) {
 		float44_t iP = invert_float44(P, detP);
 
 		pu = cotransform_float44(iP, pu);
 		pb = pu;
-		pb.y -= 0.025;
+		pb.y -= qui_tip_scl;
 	}
 
 	float44_t T0 = {
@@ -108,8 +108,6 @@ void qui_tip_end2(char *tip0, char *tip1) {
 }
 
 void qui_tip_bgn() {
-	assert(0 == qui_tip_sgnl);
-
 	qui_tip_sgnl = 0;
 	qui_tip_msk = ~0;
 }
