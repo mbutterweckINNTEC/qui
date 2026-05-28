@@ -165,7 +165,7 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
 	glLineWidth(1);
 
 	if (qui_in.prss & QUI_IN_RALT) {
-		if (qui_in.prss & QUI_IN_LMB) {
+		if (qui_in.rls & QUI_IN_LMB) {
 			int k, typ = 0;
  
 			float detPV = det_float44(PV);
@@ -194,13 +194,14 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
 					break;
 				default:
 					return 0;
-				}
+				};
 				return 1;
 			}
 		}
 
 		if (qui_in.s) {
 			*p = add_float3(*p, scale_float3(*n, qui_in.s / fVM * 0.03125));
+			return 1;
 		}
 	}
 
