@@ -495,6 +495,7 @@ int main(int argc, char *argv[]) {
 		PVM = mul_float44(VM, P);
 
 //		qui_txt("ąęśĆµðÐ!", PV, (float4_t){0, 0, 1, 1});
+		qui_txt("ąęśĆµðÐ!", scale_float44((float3_t){0.125, 0.125, 0.125}), (float4_t){0, 0, 1, 1});
 
 		qui_mtrx_psh(QUI_MTRX_P, P);
 		qui_mtrx_psh(QUI_MTRX_V, V);

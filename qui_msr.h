@@ -10,7 +10,8 @@ enum {
 	QUI_MSR_ARRWHD,	/* arrow head length: double*/
 	QUI_MSR_FNTH,	/* arrow head length: double*/
 	QUI_MSR_PSNP,	/* external snap point (eg. cursor): float3_t */
-	QUI_MSR_RDY,	/* set ready, no idle: int */
+	QUI_MSR_RDY,	/* set ready, no idle */
+	QUI_MSR_TIC,	/* each mayor grid print a value: int */
 };
 
 int qui_msr_set(int param, ...);
@@ -41,6 +42,7 @@ float3_t qui_msr_q_snp = {FLT_MAX};
 float qui_msr_mnr = 1.f, qui_msr_myr = 10.f, qui_msr_snp = 0.0625f, qui_msr_arrwhd = 2.5, qui_msr_fnth = 3.5;
 float4_t qui_msr_clr = { 1.f, 1.f, 1.f, 1.f };
 char *qui_msr_unt = "mm";
+int qui_msr_tic = 1;
 
 void qui_msr_flp(float3_t *a, float3_t *b) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
@@ -88,7 +90,7 @@ int qui_msr_drw_ln(float3_t p_[2], float3_t n) {
 	float3_t t = normal_float3(cross_float3(s, n));
 	s = normal_float3(cross_float3(n, t));
 	s = scale_float3(s, qui_msr_arrwhd);
-	t = scale_float3(t, qui_msr_arrwhd / 3.f);
+	t = scale_float3(t, qui_msr_arrwhd / 6.f);
 	float3_t aha[3] = { p[0], add_float3(p[0], sub_float3(s, t)), add_float3(p[0], add_float3(s, t)) };
 
 	qui_ngon(3, aha, identity_sc, qui_msr_clr);
@@ -101,7 +103,7 @@ int qui_msr_drw_ln(float3_t p_[2], float3_t n) {
 	char a[32];
 	sprintf(a, "%.3f %s", length_float3(l), qui_msr_unt);
 	s = scale_float3(normal_float3(s), qui_msr_fnth);
-	t = scale_float3(normal_float3(t), -qui_msr_fnth);
+	t = scale_float3(normal_float3(t), qui_msr_fnth);
 	n = scale_float3(n, qui_msr_fnth);
 	c = add_float3(c, scale_float3(normal_float3(s), -0.5f * qui_msr_fnth * qui_txt_len(a)));
 	c = add_float3(c, scale_float3(normal_float3(t), qui_msr_fnth));
@@ -121,14 +123,13 @@ int qui_msr_drw_ln(float3_t p_[2], float3_t n) {
 int qui_msr_drw_rlr(float3_t pa, float3_t pb, float3_t n) {
 	float3_t d = sub_float3(pb, pa);
 	float l = length_float3(d);
-	float3_t t = normal_float3(cross_float3(n, d));
+	float3_t t = normal_float3(cross_float3(d, n));
 	float mnr = qui_msr_mnr;
 	float myr = qui_msr_myr;
 	int mnrn = (int)(l / mnr), myrn = (int)(l / myr) + 1, pn = (mnrn + myrn + 1) << 1, off = 0;
 	float3_t *p = alloca(pn * sizeof(float3_t));
 	float3_t *p_ = p;
 	float3_t s;
-	int tic = 5;
 
 	if (NULL == p)
 		return -1;
@@ -157,9 +158,9 @@ int qui_msr_drw_rlr(float3_t pa, float3_t pb, float3_t n) {
 
 	qui_lns(pn, p_, 1, B, qui_msr_clr);
 
-	for (int i = 0; i <= myrn; i += tic) {
+	for (int i = 0; i < myrn; i += qui_msr_tic) {
 		char a[32];
-		if (myrn < i + tic)
+		if (myrn < i + qui_msr_tic)
 			sprintf(a, "%.1f %s", myr * i, qui_msr_unt);
 		else
 			sprintf(a, "%.1f", myr * i);
@@ -197,7 +198,7 @@ int qui_msr_drw_ang(float3_t p[3], float3_t rd) {
 
 		qui_bzr(3, c, 1, identity_sc, qui_msr_clr);
 
-		float sgn = dot_float3(w_, rd) < 0 ? 1.f : -1.f;
+		float sgn = dot_float3(w_, rd) < 0 ? -1.f : 1.f;
 
 		char a[32];
 		sprintf(a, "%.1f°", dang);
@@ -230,7 +231,7 @@ int qui_msr_drw_ang(float3_t p[3], float3_t rd) {
 	return 0;
 }
 
-int qui_msr_drw_prtrctr(float3_t p[]) {
+int qui_msr_drw_prtrctr(float3_t p[], float3_t rd) {
 	qui_plln(3, p, 1, identity_sc, qui_msr_clr);
 
 	if (!equal_float3(p[1], p[2])) {
@@ -257,6 +258,7 @@ int qui_msr_drw_prtrctr(float3_t p[]) {
 				sp[sp_n++] = add_float3(p[1], scale_float3(ua, 0.25));
 			}
 		}
+
 		for (int i = 0; i <= dang; i+=15) {
 			quaternion_t q = axis_angle_to_quaternion(w_, i * M_PI / 180.f);
 			float3_t ua = transform_quaternion(q, _u);
@@ -270,11 +272,15 @@ int qui_msr_drw_prtrctr(float3_t p[]) {
 
 		char a[32];
 		sprintf(a, "%.1f°", dang);
+		float sgn = dot_float3(w_, rd) < 0 ? -1.f : 1.f;
+		float3_t tt = scale_float3(u_, qui_msr_fnth);
+		float3_t rt = scale_float3(w_, qui_msr_fnth);
+		float3_t st = scale_float3(normal_float3(cross_float3(w_, u_)), sgn * qui_msr_fnth);
 		float3_t pt = add_float3(p[2], scale_float3(u_, qui_msr_fnth));
 		float44_t T = {
-			qui_msr_fnth, 0.f, 0.f, 0.f,
-			0.f, qui_msr_fnth, 0.f, 0.f,
-			0.f, 0.f, qui_msr_fnth, 0.f,
+			st.x, st.y, st.z, 0.f,
+			tt.x, tt.y, tt.z, 0.f,
+			rt.x, rt.y, rt.z, 0.f,
 			pt.x, pt.y, pt.z, 1.f
 		};
 		qui_txt(a, T, qui_msr_clr);
@@ -302,6 +308,7 @@ int qui_msr_set(int param, ...) {
 		if (qui_msr_st == QUI_MSR_ST_IDL)
 			qui_msr_st = QUI_MSR_ST_RDY;
 		break;
+	case QUI_MSR_TIC:	qui_msr_tic = va_arg(ap, int);		break;
 	default:
 		err = -1;
 	};
@@ -400,6 +407,9 @@ end:
 }
 
 int qui_msr(float3_t r, float3_t o, float R) {
+	if (qui_msr_st)
+		qui_tip_sgnl = QUI_TIP_SGNL_FCS;
+
 	switch(qui_msr_st) {
 	case QUI_MSR_ST_IDL:
 		if (qui_in.rls & QUI_IN_M) {
@@ -490,7 +500,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 	if (qui_msr_st == QUI_MSR_ST_ANG && qui_msr_pn[qui_msr_n] == 1) {
 		float3_t p[3] = { qui_msr_p[qui_msr_n][0], qui_msr_qr(r, o, R) };
 		p[2] = p[1];
-		qui_msr_drw_prtrctr(p);
+		qui_msr_drw_prtrctr(p, r);
 	}
 
 	if (qui_msr_st != QUI_MSR_ST_IDL) {
@@ -502,7 +512,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 
 	if (qui_msr_st == QUI_MSR_ST_ANG && qui_msr_pn[qui_msr_n] == 2) {
 		float3_t p[3] = { qui_msr_p[qui_msr_n][0], qui_msr_p[qui_msr_n][1], qui_msr_qr(r, o, R) };
-		qui_msr_drw_prtrctr(p);
+		qui_msr_drw_prtrctr(p, r);
 	}
 
 	return 1;
