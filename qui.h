@@ -1,3 +1,6 @@
+#ifndef QUI_H
+#define QUI_H
+
 enum {
 	QUI_FLGS_AA = 0x1	/* Setup for old-school antialiasing, affects colors. */
 };
@@ -65,3 +68,4 @@ int qui_rm() {
 }
 
 #endif /* QUI_IMPL */
+#endif /* QUI_H */
