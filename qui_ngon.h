@@ -33,6 +33,11 @@ int qui_ngon(int n, float3_t p[], float44_t M, float4_t c) {
 	glUnmapNamedBuffer(qui_strm_vbo);
 
 	/* draw setup */
+	int was = 0;
+	if (glIsEnabled(GL_DEPTH_TEST)) {
+		glDisable(GL_DEPTH_TEST);
+		was = 1;
+	}
 	glUseProgram(qui_shdr_po);
 	glUniformMatrix4fv(qui_shdr_M, 1, 0, &PVM.m[0][0]);
 	glBindVertexArray(qui_strm_vao);
@@ -51,9 +56,11 @@ int qui_ngon(int n, float3_t p[], float44_t M, float4_t c) {
 	glDrawArrays(GL_TRIANGLE_FAN, b, n);
 
 	/* draw when mask succeeds */
-    glStencilFunc(GL_EQUAL, 1, 1);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-    glColorMask(1, 1, 1, 1);
+	glStencilFunc(GL_EQUAL, 1, 1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glColorMask(1, 1, 1, 1);
+	if (was)
+		glEnable(GL_DEPTH_TEST);
 
 	glDrawArrays(GL_TRIANGLE_FAN, b, n);
 
