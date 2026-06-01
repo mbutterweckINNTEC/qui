@@ -173,7 +173,7 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
                         float3_t o = float3_float4(cotransform_float44(iPV, (float4_t){ qui_in.p.x, qui_in.p.y, -1, 1 }));
                         float3_t r = m_float3(cotransform_float44(iPV, (float4_t){ 0, 0, 1, 0 }));
 
-			k = qui_qr_find(QUI_QR_FND_BST, o, qui_aim_R, &typ);
+			k = qui_qr_find(QUI_QR_FND_BST, &typ);
 			if (0 <= k) {
 				*p = qui_qr[typ][k + qui_qr_s[typ] - 1];
 				switch (typ) {

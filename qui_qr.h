@@ -32,7 +32,7 @@ enum {
 	/* internal */
 	QUI_QR_FND_BST_ANY = 0x8,
 };
-int qui_qr_find(int fnd, float3_t o, float r, int *typ /*out*/);
+int qui_qr_find(int fnd, int *typ /*out*/);
 
 #ifdef QUI_IMPL
 
@@ -217,7 +217,7 @@ int qui_qr_end() {
 	return 0;
 }
 
-int qui_qr_find(int fnd, float3_t o, float R, int *typ /*out*/) {
+int qui_qr_find(int fnd, int *typ /*out*/) {
 	float t = FLT_MAX;
 	int k = -1;
 	int q = 0;
@@ -225,14 +225,14 @@ int qui_qr_find(int fnd, float3_t o, float R, int *typ /*out*/) {
 	for (int f = QUI_QR_FND_NRST_PNT; q < 3; f <<= 1, ++q) {
 		if (f & fnd) {
 			for (int i = 0; i < qui_qr_n[q]; i += qui_qr_s[q]) {
-				float l = length_float3(sub_float3(o, qui_qr[q][i + qui_qr_s[q] - 1]));
+				float l = length_float3(sub_float3(qui_qr_o, qui_qr[q][i + qui_qr_s[q] - 1]));
 				if (l < t) {
 					if (0 <= k && fnd & QUI_QR_FND_BST_ANY) {
 						float r = length_float3(
 							sub_float3(
 								qui_qr[*typ][k + qui_qr_s[*typ] - 1],
 								qui_qr[q][i + qui_qr_s[q] - 1]));
-						if (r < R)
+						if (r < qui_qr_R)
 							continue;
 					}
 					t = l;

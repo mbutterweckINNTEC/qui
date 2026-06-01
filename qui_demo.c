@@ -365,7 +365,7 @@ int main(int argc, char *argv[]) {
 
 			{
 				int t;
-				int i = qui_qr_find(QUI_QR_FND_BST, co, 0.0625, &t);
+				int i = qui_qr_find(QUI_QR_FND_BST, &t);
 
 				if (0 <= i) {
 					qui_mtrx_psh(QUI_MTRX_P, P);

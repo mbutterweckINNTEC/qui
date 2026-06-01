@@ -365,7 +365,7 @@ float3_t qui_msr_qr(float3_t r, float3_t o, float R) {
 		}
 	}
 
-	if (0 > (qri = qui_qr_find(QUI_QR_FND_BST, o, qui_msr_snp, &qrt)))
+	if (0 > (qri = qui_qr_find(QUI_QR_FND_BST, &qrt)))
 		goto end;
 
 	p = qui_qr[qrt][qri + qui_qr_s[qrt] - 1];
