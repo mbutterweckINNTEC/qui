@@ -121,6 +121,8 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr) {
 	else
 		qui_ngon(6, qui_tggl_knob_off_ngon, N, kc_off);
 
+	if (ret) qui_in.st = QUI_IN_ST_CNSMD;
+
 	return ret;
 }
 

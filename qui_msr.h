@@ -410,6 +410,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 	if (qui_msr_st)
 		qui_tip_sgnl = QUI_TIP_SGNL_FCS;
 
+	if (QUI_IN_ST_NIL == qui_in.st)
 	switch(qui_msr_st) {
 	case QUI_MSR_ST_IDL:
 		if (qui_in.rls & QUI_IN_M) {
@@ -424,17 +425,23 @@ int qui_msr(float3_t r, float3_t o, float R) {
 				qui_msr_pn[qui_msr_n] = 1;
 				qui_msr_p[qui_msr_n][0] = qui_msr_qr(r, o, R);
 				qui_msr_st = QUI_MSR_ST_LN;
+				qui_in.st = QUI_IN_ST_CNSMD;
 			}
 			if (qui_in.rls & QUI_IN_RMB) {
 				qui_msr_pn[qui_msr_n] = 1;
 				qui_msr_p[qui_msr_n][0] = qui_msr_qr(r, o, R);
 				qui_msr_st = QUI_MSR_ST_ANG;
+				qui_in.st = QUI_IN_ST_CNSMD;
 			}
 		}
-		if (qui_in.rls & QUI_IN_BCK && qui_msr_n)
+		if (qui_in.rls & QUI_IN_BCK && qui_msr_n) {
 			--qui_msr_n;
-		if (qui_in.rls & QUI_IN_ESC)
+			qui_in.st = QUI_IN_ST_CNSMD;
+		}
+		if (qui_in.rls & QUI_IN_ESC) {
 			qui_msr_st = QUI_MSR_ST_IDL;
+			qui_in.st = QUI_IN_ST_CNSMD;
+		}
 		break;
 	case QUI_MSR_ST_LN:
 		if (qui_in.rls & QUI_IN_LMB) {
@@ -442,17 +449,23 @@ int qui_msr(float3_t r, float3_t o, float R) {
 			++qui_msr_pn[qui_msr_n];
 			qui_msr_n++;
 			qui_msr_st = QUI_MSR_ST_RDY;
+			qui_in.st = QUI_IN_ST_CNSMD;
 		}
 		if (qui_in.rls & QUI_IN_RET && qui_msr_q_snp.x != FLT_MAX) {
 			qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]] = qui_msr_q_snp;
 			++qui_msr_pn[qui_msr_n];
 			qui_msr_n++;
 			qui_msr_st = QUI_MSR_ST_RDY;
+			qui_in.st = QUI_IN_ST_CNSMD;
 		}
-		if (qui_in.rls & QUI_IN_BCK && qui_msr_pn[qui_msr_n])
+		if (qui_in.rls & QUI_IN_BCK && qui_msr_pn[qui_msr_n]) {
 			--qui_msr_pn[qui_msr_n];
-		if (qui_in.rls & QUI_IN_ESC)
+			qui_in.st = QUI_IN_ST_CNSMD;
+		}
+		if (qui_in.rls & QUI_IN_ESC) {
 			qui_msr_st = QUI_MSR_ST_RDY;
+			qui_in.st = QUI_IN_ST_CNSMD;
+		}
 		break;
 	case QUI_MSR_ST_ANG:
 		if (qui_in.rls & QUI_IN_RMB) {
@@ -463,6 +476,7 @@ int qui_msr(float3_t r, float3_t o, float R) {
 				++qui_msr_n;
 				qui_msr_st = QUI_MSR_ST_RDY;
 			}
+			qui_in.st = QUI_IN_ST_CNSMD;
 		}
 		if (qui_in.rls & QUI_IN_RET && qui_msr_q_snp.x != FLT_MAX) {
 			qui_msr_p[qui_msr_n][qui_msr_pn[qui_msr_n]] = qui_msr_q_snp;
@@ -471,11 +485,16 @@ int qui_msr(float3_t r, float3_t o, float R) {
 				++qui_msr_n;
 				qui_msr_st = QUI_MSR_ST_RDY;
 			}
+			qui_in.st = QUI_IN_ST_CNSMD;
 		}
-		if (qui_in.rls & QUI_IN_BCK && qui_msr_pn[qui_msr_n])
+		if (qui_in.rls & QUI_IN_BCK && qui_msr_pn[qui_msr_n]) {
 			--qui_msr_pn[qui_msr_n];
-		if (qui_in.rls & QUI_IN_ESC)
+			qui_in.st = QUI_IN_ST_CNSMD;
+		}
+		if (qui_in.rls & QUI_IN_ESC) {
 			qui_msr_st = QUI_MSR_ST_RDY;
+			qui_in.st = QUI_IN_ST_CNSMD;
+		}
 		break;
 	};
 

@@ -152,10 +152,15 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
 
+	if (qui_in.st == QUI_IN_ST_CNSMD)
+		return QUI_VAL_RET_NIL;
+
 	qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
 
-	if (qui_in.rls & QUI_IN_RET)
+	if (qui_in.rls & QUI_IN_RET) {
+		qui_in.st = QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_SET;
+	}
 
 	if (qui_in.rls & QUI_IN_BCK) {
 		sprintf(sval, "%d", *val);
@@ -173,6 +178,7 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 				return QUI_VAL_RET_ED;
 			}
 		}
+		qui_in.st = QUI_IN_ST_CNSMD;
 	}
 
 	if (qui_in.rls & QUI_IN_NUM) {
@@ -195,12 +201,15 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 		case QUI_IN_9: sval[sl] = '9'; break;
 		};
 
-		if (1 == sscanf(sval, "%d", val))
+		if (1 == sscanf(sval, "%d", val)) {
+			qui_in.st = QUI_IN_ST_CNSMD;
 			return QUI_VAL_RET_ED;
+		}
 	}
 
 	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
+		qui_in.st = QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
 	return QUI_VAL_RET_NIL;
@@ -260,6 +269,9 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 	if (flgs & QUI_VAL_FLGS_CNST)
 		return QUI_VAL_RET_NIL;
 
+	if (qui_in.st == QUI_IN_ST_CNSMD)
+		return QUI_VAL_RET_NIL;
+
 	qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
 
 	if (qui_in.rls & QUI_IN_RET) {
@@ -270,6 +282,8 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 		u.f = *val;
 		u.b &=~ 3;
 		*val = u.f;
+
+		qui_in.st = QUI_IN_ST_CNSMD;
 
 		return QUI_VAL_RET_SET;
 	}
@@ -307,6 +321,7 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 			u.b |= prc;
 
 			*val = u.f;
+			qui_in.st = QUI_IN_ST_CNSMD;
 			return QUI_VAL_RET_ED;
 		}
 	}
@@ -361,11 +376,13 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 
 		*val = u.f;
 
+		qui_in.st = QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
 
 	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
+		qui_in.st = QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
 	return QUI_VAL_RET_NIL;

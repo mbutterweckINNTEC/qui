@@ -91,6 +91,8 @@ int qui_bttn(char *nm, float44_t M, float3_t clr) {
 	qui_ngon(6, qui_bttn_ngon, N, bg);
 	qui_txt(nm, T, fg);
 
+	if (ret) qui_in.st = QUI_IN_ST_CNSMD;
+
 	return ret;
 }
 

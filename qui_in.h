@@ -38,9 +38,15 @@ enum {
 	QUI_IN_ALL = ~0
 };
 
+enum {
+	QUI_IN_ST_NIL,
+	QUI_IN_ST_CNSMD	/* input was consumed */
+};
+
 struct qui_in {
 	int prss;
 	int rls;
+	int st;
 
 	float2_t p;
 	float2_t d;
