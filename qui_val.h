@@ -15,6 +15,8 @@ enum {
 int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs);
 int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int flgs);
 
+int qui_val_hvr(float44_t M);
+
 /* Implementation */
 #ifdef QUI_IMPL
 
@@ -47,6 +49,42 @@ static float3_t qui_val_val_ngon[] = {
 	{ 3.5f + 1.5 + 0.1f,-0.8660254038f - 0.8660254038f - 0.08660254038f, 0.f },
 	{-0.5f + 1.5 + 0.1f,-0.8660254038f - 0.8660254038f - 0.08660254038f, 0.f },
 };
+
+int qui_val_hvr(float44_t M_) {
+	float44_t P = qui_mtrx_top(QUI_MTRX_P);
+	float44_t V = qui_mtrx_top(QUI_MTRX_V);
+	float44_t S = {
+		qui_val_scl, 0, 0, 0,
+		0, qui_val_scl, 0, 0,
+		0, 0, 1, 0,
+		-qui_val_scl*5, 0, 0, 1
+        };
+	float44_t M = mul_float44(S, M_);
+	float44_t PVM = mul_float44(M, mul_float44(V, P));
+
+	float4_t x[3] = {
+		{ 1.5 + 0.1f, - 0.8660254038f - 0.08660254038f, 0.f, 1.f },
+		{ 3.0 + 1.5 + 0.1f, - 0.8660254038f - 0.08660254038f, 0.f, 1.f },
+		{ 2.0 + 1.5 + 0.1f, - 0.8660254038f - 0.08660254038f, 0.f, 1.f }
+	};
+
+	float r = frobenius_float33(float33_float44(PVM));
+
+	for (int i = 0; i < 3; ++i) {
+		float3_t p = float3_float4(cotransform_float44(PVM, x[i]));
+		float dx = p.x - qui_in.p.x;
+		float dy = p.y - qui_in.p.y;
+
+		float d = sqrt(dx * dx + dy * dy);
+
+		if (d < r) {
+			fprintf(stderr, "hvr %d: [%f %f %f] [%f %f] %f\n", i, p.x, p.y, p.z, qui_in.p.x, qui_in.p.y, r);
+			return 1;
+		}
+	}
+
+	return 0;
+}
 
 static int qui_val_drw(float44_t M_, float3_t clr, char *nm, char *unt, char *val) {
 	float4_t bg = m_float4(clr, 1.f);
@@ -91,12 +129,16 @@ static int qui_val_drw(float44_t M_, float3_t clr, char *nm, char *unt, char *va
 		T
 	);
 
-	qui_ngon(6, qui_val_nm_ngon, M, bg);
-	qui_txt(nm, T, fg);
+	if (nm) {
+		qui_ngon(6, qui_val_nm_ngon, M, bg);
+		qui_txt(nm, T, fg);
+	}
 	qui_ngon(6, qui_val_val_ngon, M, bg);
 	qui_txt(val, T2, fgv);
-	qui_ngon(6, qui_val_unt_ngon, M, bg);
-	qui_txt(unt, T3, fg);
+	if (unt) {
+		qui_ngon(6, qui_val_unt_ngon, M, bg);
+		qui_txt(unt, T3, fg);
+	}
 
 	return 0;
 }
