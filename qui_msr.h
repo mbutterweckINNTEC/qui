@@ -408,7 +408,7 @@ end:
 
 int qui_msr(float3_t r, float3_t o, float R) {
 	if (qui_msr_st)
-		qui_tip_sgnl = QUI_TIP_SGNL_FCS;
+		qui_tip_sgnl |= QUI_TIP_SGNL_FCS;
 
 	if (QUI_IN_ST_NIL == qui_in.st)
 	switch(qui_msr_st) {
