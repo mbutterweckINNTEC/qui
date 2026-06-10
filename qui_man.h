@@ -20,8 +20,15 @@ enum {
 	QUI_MAN_SET
 };
 
-
 int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms);
+
+enum {
+	QUI_MAN_ENBL_MOV = 0x1,
+	QUI_MAN_ENBL_ROT = 0x2,
+	QUI_MAN_ENBL_SCL = 0x4,
+};
+
+extern int qui_man_enbld;
 
 int qui_man_mk();
 int qui_man_rm();
@@ -29,6 +36,7 @@ int qui_man_rm();
 #ifdef QUI_IMPL
 
 int qui_man_vbo, qui_man_vao;
+int qui_man_enbld = QUI_MAN_ENBL_MOV | QUI_MAN_ENBL_ROT | QUI_MAN_ENBL_SCL;
 
 enum {
 	QUI_MAN_MOD_MOUSE,
@@ -395,62 +403,73 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 
 	/* input handling */
 	if (QUI_MAN_STTS_NIL == qm->stts) {
-		float l, nl;
+		float l = FLT_MAX, nl;
 		int stts = 0, phi = 0, nphi = 0;
 
-		l = qui_ray_xcrcl_(p, d, &phi);
-		stts = QUI_MAN_STTS_ROT_X;
+		if (qui_man_enbld & QUI_MAN_ENBL_ROT) {
+			nl = qui_ray_xcrcl_(p, d, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_X;
+			}
 
-		nl = qui_ray_ycrcl_(p, d, &nphi);
-		if (nl < l) {
-			l = nl;
-			phi = nphi;
-			stts = QUI_MAN_STTS_ROT_Y;
+			nl = qui_ray_ycrcl_(p, d, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_Y;
+			}
+
+			nl = qui_ray_zcrcl_(p, d, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_Z;
+			}
+
+			nl = qui_ray_vcrcl_(pv, &nphi);
+			if (nl < l) {
+				l = nl;
+				phi = nphi;
+				stts = QUI_MAN_STTS_ROT_V;
+			}
 		}
 
-		nl = qui_ray_zcrcl_(p, d, &nphi);
-		if (nl < l) {
-			l = nl;
-			phi = nphi;
-			stts = QUI_MAN_STTS_ROT_Z;
+		if (qui_man_enbld & QUI_MAN_ENBL_SCL) {
+			nl = qui_ray_crnr_(pv);
+			if (nl < l) {
+				l = nl;
+				ds = length_float2(pv) / sqrtf(2.f) / QUI_MAN_S_DXY;
+				stts = QUI_MAN_STTS_SCL;
+			}
+
 		}
 
-		nl = qui_ray_vcrcl_(pv, &nphi);
-		if (nl < l) {
-			l = nl;
-			phi = nphi;
-			stts = QUI_MAN_STTS_ROT_V;
+		if (qui_man_enbld & QUI_MAN_ENBL_MOV) {
+			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f });
+			if (nl < l) {
+				l = nl;
+				qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
+				stts = QUI_MAN_STTS_MOV_X;
+			}
+
+			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f });
+			if (nl < l) {
+				l = nl;
+				qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f }).y;
+				stts = QUI_MAN_STTS_MOV_Y;
+			}
+
+			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
+			if (nl < l) {
+				l = nl;
+				qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
+				stts = QUI_MAN_STTS_MOV_Z;
+			}
 		}
 
-		nl = qui_ray_crnr_(pv);
-		if (nl < l) {
-			l = nl;
-			ds = length_float2(pv) / sqrtf(2.f) / QUI_MAN_S_DXY;
-			stts = QUI_MAN_STTS_SCL;
-		}
-
-		nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f });
-		if (nl < l) {
-			l = nl;
-			qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ QUI_MAN_L_XYZ, 0.f, 0.f }).x;
-			stts = QUI_MAN_STTS_MOV_X;
-		}
-
-		nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f });
-		if (nl < l) {
-			l = nl;
-			qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, QUI_MAN_L_XYZ, 0.f }).y;
-			stts = QUI_MAN_STTS_MOV_Y;
-		}
-
-		nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
-		if (nl < l) {
-			l = nl;
-			qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
-			stts = QUI_MAN_STTS_MOV_Z;
-		}
-
-		if (l * fV < QUI_MAN_EPS) {
+		if (stts && l * fV < QUI_MAN_EPS) {
 			qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
 
 			if (qui_in.rls & QUI_IN_LMB) {
@@ -514,8 +533,8 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 			}
 		}
 
-		if (qui_in.rls & QUI_IN_ESC) {
-			switch(qm->stts) {
+		if (qui_in.rls & QUI_IN_ESC || qui_in.rls & QUI_IN_RMB) {
+/*			switch(qm->stts) {
 			case QUI_MAN_STTS_ROT_X:
 			case QUI_MAN_STTS_ROT_Y:
 			case QUI_MAN_STTS_ROT_Z:
@@ -530,7 +549,7 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 			case QUI_MAN_STTS_MOV_Z:
 				*mt = qm->t;
 				break;
-			};
+			};*/
 
 			qm->mod = QUI_MAN_MOD_MOUSE;
 			qm->stts = QUI_MAN_STTS_NIL;
@@ -555,9 +574,14 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 	case QUI_MAN_STTS_MOV_Z:
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
 		break;
-	case QUI_MAN_STTS_NIL:
-		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_CRCL_FRM);
+	case QUI_MAN_STTS_NIL: {
+		int shw = 0;
+		if (qui_man_enbld & QUI_MAN_ENBL_MOV) shw |= QUI_MAN_FLGS_AXIS_XYZV;
+		if (qui_man_enbld & QUI_MAN_ENBL_ROT) shw |= QUI_MAN_FLGS_CRCL_XYZV;
+		if (qui_man_enbld & QUI_MAN_ENBL_SCL) shw |= QUI_MAN_FLGS_FRM;
+		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, shw);
 		break;
+	}
 	case QUI_MAN_STTS_ROT_X:
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_X | QUI_MAN_FLGS_PIE_X);
 		break;
@@ -570,7 +594,7 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 	case QUI_MAN_STTS_ROT_V:
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_PIE_STRT, qm->phi, QUI_MAN_OP_PIE_ANGL, qm->dphi, QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V | QUI_MAN_FLGS_PIE_V);
 		break;
-		case QUI_MAN_STTS_SCL:
+	case QUI_MAN_STTS_SCL:
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, 2, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
 		break;
 	};
@@ -679,11 +703,14 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		break;
 	case QUI_MAN_STTS_MOV_X:
 	case QUI_MAN_STTS_MOV_Y:
-	case QUI_MAN_STTS_MOV_Z:
-		if (qui_val_f(M, bg, nm, unt, &qm->dt, val_flgs)) {
+	case QUI_MAN_STTS_MOV_Z: {
+		float dt = qm->dt - qm->t0;
+		if (qui_val_f(M, bg, nm, unt, &dt, val_flgs)) {
 			qm->mod = QUI_MAN_MOD_KEY;
+			qm->dt = dt + qm->t0;
 		}
 		break;
+	}
 	case QUI_MAN_STTS_SCL:
 		if (qm->mod == QUI_MAN_MOD_MOUSE) {
 			qm->ds = *ms * ds / qm->s;
@@ -709,37 +736,47 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 
 	qui_mtrx_pop(QUI_MTRX_V);
 
+	*mq = (quaternion_t){ 1.f, 0.f, 0.f, 0.f };
+	*mt = (float3_t){ 0.f, 0.f, 0.f };
+	*ms = 1.f;
 	switch(qm->stts) {
 	case QUI_MAN_STTS_NIL:
 		break;
 	case QUI_MAN_STTS_ROT_X:
-		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -qm->dphi * M_PI / 180.0));
+		*mq = axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -qm->dphi * M_PI / 180.0);
+//		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) {1.f, 0.f, 0.f }, -qm->dphi * M_PI / 180.0));
 		break;
 	case QUI_MAN_STTS_ROT_Y:
-		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, qm->dphi * M_PI / 180.0));
+		*mq = axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, qm->dphi * M_PI / 180.0);
+//		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) { 0.f, 1.f, 0.f }, qm->dphi * M_PI / 180.0));
 		break;
 	case QUI_MAN_STTS_ROT_Z:
-		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0));
+		*mq = axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0);
+//		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0));
 		break;
 	case QUI_MAN_STTS_ROT_V:
-		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0));
+		*mq = axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0);
+//		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0));
 		break;
 	case QUI_MAN_STTS_MOV_X:
-		*mt = add_float3(qm->t, (float3_t){ qm->dt - qm->t0, 0.f, 0.f });
+		*mt = (float3_t){ qm->dt - qm->t0, 0.f, 0.f };
+//		*mt = add_float3(qm->t, (float3_t){ qm->dt - qm->t0, 0.f, 0.f });
 		break;
 	case QUI_MAN_STTS_MOV_Y:
-		*mt = add_float3(qm->t, (float3_t){ 0.f, qm->dt - qm->t0, 0.f });
+		*mt = (float3_t){ 0.f, qm->dt - qm->t0, 0.f };
+//		*mt = add_float3(qm->t, (float3_t){ 0.f, qm->dt - qm->t0, 0.f });
 		break;
 	case QUI_MAN_STTS_MOV_Z:
-		*mt = add_float3(qm->t, (float3_t){  0.f, 0.f, qm->dt - qm->t0 });
+		*mt = (float3_t){  0.f, 0.f, qm->dt - qm->t0 };
+//		*mt = add_float3(qm->t, (float3_t){  0.f, 0.f, qm->dt - qm->t0 });
 		break;
+	case QUI_MAN_STTS_SCL:
+		*ms = ds;
 	};
 
 	if (qui_in.rls & QUI_IN_RET) {
 		rstts = QUI_MAN_SET;
 	}
-
-	*ms *= ds;
 
 	if (rstts == QUI_MAN_SET) {
 			qm->stts = QUI_MAN_STTS_NIL;
