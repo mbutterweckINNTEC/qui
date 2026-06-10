@@ -18,6 +18,7 @@ struct qui_fnt {
 };
 
 int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */);
+int qui_fnt_rm(struct qui_fnt *fnt);
 int qui_fnt_use(struct qui_fnt *fnt);
 
 /* PRIV */
@@ -155,11 +156,34 @@ int qui_fnt_ld(struct qui_fnt *fnt, char *pth /* .obj wavefront! */) {
 	return 0;
 }
 
-
 int qui_fnt_use(struct qui_fnt *fnt) {
 	qui_fnt = fnt;
 
 	return 0;
+}
+
+int qui_fnt_rm(struct qui_fnt *fnt) {
+	int err = 0;
+
+	if (!fnt)
+		return -1;
+
+	if (fnt->vao)
+		glDeleteVertexArrays(1, &fnt->vao);
+	else
+		err = -1;
+
+	if (fnt->vbo)
+		glDeleteBuffers(1, &fnt->vbo);
+	else
+		err = -1;
+
+	if (fnt->ebo)
+		glDeleteBuffers(1, &fnt->ebo);
+	else
+		err = -1;
+
+	return err;
 }
 
 #endif /* QUI_IMPL */

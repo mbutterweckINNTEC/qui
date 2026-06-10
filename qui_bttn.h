@@ -12,7 +12,7 @@ int qui_bttn(char *nm, float44_t M, float3_t clr);
 #ifdef QUI_IMPL
 
 static float const qui_bttn_scl = 0.03125;
-static float3_t const qui_bttn_mv = {0.04 / 0.0625 * qui_bttn_scl, 0.02 / 0.0625 * qui_bttn_scl };
+static float3_t const qui_bttn_mv = {0.04 / 0.0625 * qui_bttn_scl, 0.04 / 0.0625 * qui_bttn_scl };
 
 static float3_t qui_bttn_ngon[] = {
 	{ -1.f, 0.f, 0.f },
@@ -51,7 +51,7 @@ int qui_bttn(char *nm, float44_t M, float3_t clr) {
 		float d = qui_ray_pnt_dst(p, r, (float3_t){ 0.f, 0.f, 0.f });
 
 		if (d < 0.8660254038f) {
-			qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
+			qui_tip_sgnl |= QUI_TIP_SGNL_FCS;
 
 			bg = m_float4(mix_float3(clr, (float3_t){ 0.5f, 0.5f, 0.5f }, 0.5), 1.f);
 
@@ -80,8 +80,8 @@ int qui_bttn(char *nm, float44_t M, float3_t clr) {
 	/* draw */
 
 	float44_t Z = {
-		qui_bttn_scl, 0, 0, 0,
-		0, qui_bttn_scl, 0, 0,
+		1.25 * qui_bttn_scl, 0, 0, 0,
+		0, 1.25 * qui_bttn_scl, 0, 0,
 		0, 0, 1, 0,
 		-qui_bttn_mv.x, -qui_bttn_mv.y, 0, 1
 	};

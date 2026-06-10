@@ -31,6 +31,7 @@ float qui_txt_len(char *a) {
 
 int qui_txt(char *a, float44_t M, float4_t c) {
 	int u, stts = 1;
+	float bsp = 0;
 
 	enum {
 		STTS_STRT = 0x1
@@ -67,13 +68,22 @@ int qui_txt(char *a, float44_t M, float4_t c) {
 	while (*a) {
 		u = qui_utf8_pop(&a);
 
+		if (0x08 == u) { /* backspace */
+			X.m[3][0] -= bsp;
+			continue;
+		}
+
+		bsp = 0;
+
 		if (QUI_FNT_MX <= u)
 			continue;
 
 		if (stts & STTS_STRT) {
 			X.m[3][0] = qui_fnt->glph[u].lsb;
+			//bsp += qui_fnt->glph[u].lsb;
 			stts ^= STTS_STRT;
 		}
+		X.m[3][0] -= qui_fnt->glph[u].lsb;
 
 		PVMX = mul_float44(mul_float44(X, M), mul_float44(V, P));
 		glUniformMatrix4fv(qui_shdr_M, 1, 0, &PVMX.m[0][0]);
@@ -83,6 +93,7 @@ int qui_txt(char *a, float44_t M, float4_t c) {
 			glDrawElements(GL_TRIANGLES, qui_fnt->glph[u].en, GL_UNSIGNED_INT, (void*)(qui_fnt->glph[u].e0 * sizeof(int)));
 
 		X.m[3][0] += qui_fnt->glph[u].xadv;
+		bsp += qui_fnt->glph[u].xadv;
 	}
 
 	if (qui_flgs & QUI_FLGS_AA) {
