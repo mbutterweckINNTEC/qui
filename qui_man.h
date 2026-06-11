@@ -20,7 +20,7 @@ enum {
 	QUI_MAN_SET
 };
 
-int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms);
+int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, float *ms);
 
 enum {
 	QUI_MAN_ENBL_MOV = 0x1,
@@ -353,7 +353,7 @@ int qui_man_drw(float44_t P, float44_t V, float44_t W, int op[], int flgs) {
 
 #define QUI_MAN_EPS 0.01
 
-int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
+int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, float *ms) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
 	float44_t V = qui_mtrx_top(QUI_MTRX_V);
 
@@ -371,6 +371,7 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 		mt_.x, mt_.y, mt_.z, 1.f
 	};
 	V = mul_float44(T, V);
+	V = mul_float44(O, V);
 
 	float44_t PV = mul_float44(V, P);
 	float detPV = det_float44(PV);
@@ -755,7 +756,7 @@ int qui_man(struct qui_man *qm, float3_t *mt, quaternion_t *mq, float *ms) {
 //		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion((float3_t) { 0.f, 0.f, 1.f }, -qm->dphi * M_PI / 180.0));
 		break;
 	case QUI_MAN_STTS_ROT_V:
-		*mq = axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0);
+		*mq = axis_angle_to_quaternion(d, -qm->dphi * M_PI / 180.0);
 //		*mq = mul_quaternion(qm->q, axis_angle_to_quaternion(d, qm->dphi * M_PI / 180.0));
 		break;
 	case QUI_MAN_STTS_MOV_X:
