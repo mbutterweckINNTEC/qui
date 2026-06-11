@@ -88,8 +88,11 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr) {
 
 			bg = m_float4(mix_float3(clr, (float3_t){ 0.5f, 0.5f, 0.5f }, 0.5), 1.f);
 
+			qui_in.st |= QUI_IN_ST_HVRD;
+
 			if (qui_in.prss & QUI_IN_LMB) {
 				bg = m_float4(mix_float3(clr, (float3_t){ 0.25f, 0.25f, 0.25f }, 0.5), 1.f);
+				qui_in.st |= QUI_IN_ST_CNSMD;
 			}
 
 			if (qui_in.rls & QUI_IN_LMB) {
@@ -97,6 +100,7 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr) {
 				fg = bg;
 				*flgs ^= flg;
 				ret = 1;
+				qui_in.st |= QUI_IN_ST_CNSMD;
 			}
 		}
 	}
@@ -121,7 +125,7 @@ int qui_tggl(char *nm, int *flgs, int flg, float44_t M, float3_t clr) {
 	else
 		qui_ngon(6, qui_tggl_knob_off_ngon, N, kc_off);
 
-	if (ret) qui_in.st = QUI_IN_ST_CNSMD;
+	if (ret) qui_in.st |= QUI_IN_ST_CNSMD;
 
 	return ret;
 }

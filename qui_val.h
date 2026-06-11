@@ -78,7 +78,7 @@ int qui_val_hvr(float44_t M_) {
 		float d = sqrt(dx * dx + dy * dy);
 
 		if (d < r) {
-			fprintf(stderr, "hvr %d: [%f %f %f] [%f %f] %f\n", i, p.x, p.y, p.z, qui_in.p.x, qui_in.p.y, r);
+			qui_in.st |= QUI_IN_ST_HVRD;
 			return 1;
 		}
 	}
@@ -158,7 +158,7 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 	qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
 
 	if (qui_in.rls & QUI_IN_RET) {
-		qui_in.st = QUI_IN_ST_CNSMD;
+		qui_in.st |= QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_SET;
 	}
 
@@ -178,7 +178,7 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 				return QUI_VAL_RET_ED;
 			}
 		}
-		qui_in.st = QUI_IN_ST_CNSMD;
+		qui_in.st |= QUI_IN_ST_CNSMD;
 	}
 
 	if (qui_in.rls & QUI_IN_NUM) {
@@ -202,14 +202,14 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 		};
 
 		if (1 == sscanf(sval, "%d", val)) {
-			qui_in.st = QUI_IN_ST_CNSMD;
+			qui_in.st |= QUI_IN_ST_CNSMD;
 			return QUI_VAL_RET_ED;
 		}
 	}
 
 	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
-		qui_in.st = QUI_IN_ST_CNSMD;
+		qui_in.st |= QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
 	return QUI_VAL_RET_NIL;
@@ -283,7 +283,7 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 		u.b &=~ 3;
 		*val = u.f;
 
-		qui_in.st = QUI_IN_ST_CNSMD;
+		qui_in.st |= QUI_IN_ST_CNSMD;
 
 		return QUI_VAL_RET_SET;
 	}
@@ -321,7 +321,7 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 			u.b |= prc;
 
 			*val = u.f;
-			qui_in.st = QUI_IN_ST_CNSMD;
+			qui_in.st |= QUI_IN_ST_CNSMD;
 			return QUI_VAL_RET_ED;
 		}
 	}
@@ -376,13 +376,13 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 
 		*val = u.f;
 
-		qui_in.st = QUI_IN_ST_CNSMD;
+		qui_in.st |= QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
 
 	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
-		qui_in.st = QUI_IN_ST_CNSMD;
+		qui_in.st |= QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
 	return QUI_VAL_RET_NIL;

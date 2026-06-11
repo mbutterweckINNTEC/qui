@@ -52,27 +52,32 @@ int qui_bttn(char *nm, float44_t M, float3_t clr) {
 
 		if (d < 0.8660254038f) {
 			qui_tip_sgnl |= QUI_TIP_SGNL_FCS;
+			qui_in.st = QUI_IN_ST_HVRD;
 
 			bg = m_float4(mix_float3(clr, (float3_t){ 0.5f, 0.5f, 0.5f }, 0.5), 1.f);
 
 			if (qui_in.prss & QUI_IN_LMB) {
 				bg = m_float4(mix_float3(clr, (float3_t){ 0.25f, 0.25f, 0.25f }, 0.5), 1.f);
+				qui_in.st = QUI_IN_ST_CNSMD;
 			}
 
 			if (qui_in.prss & QUI_IN_RMB) {
 				bg = fg;
 				fg = m_float4(mix_float3(clr, (float3_t){ 0.25f, 0.25f, 0.25f }, 0.5), 1.f);
+				qui_in.st = QUI_IN_ST_CNSMD;
 			}
 
 			if (qui_in.rls & QUI_IN_LMB) {
 				bg = m_float4(mix_float3(clr, (float3_t){ 0.25f, 0.25f, 0.25f }, 0.5), 1.f);
 				fg = bg;
 				ret = QUI_BTTN_L;
+				qui_in.st = QUI_IN_ST_CNSMD;
 			}
 
 			if (qui_in.rls & QUI_IN_RMB) {
 				bg = fg;
 				ret = QUI_BTTN_R;
+				qui_in.st = QUI_IN_ST_CNSMD;
 			}
 		}
 	}

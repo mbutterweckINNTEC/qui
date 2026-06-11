@@ -39,8 +39,8 @@ enum {
 };
 
 enum {
-	QUI_IN_ST_NIL,
-	QUI_IN_ST_CNSMD	/* input was consumed */
+	QUI_IN_ST_CNSMD	= 0x1,	/* input was consumed */
+	QUI_IN_ST_HVRD = 0x2,	/* some part of gui is hovered */
 };
 
 struct qui_in {

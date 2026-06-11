@@ -472,6 +472,7 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 
 		if (stts && l * fV < QUI_MAN_EPS) {
 			qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
+			qui_in.st |= QUI_IN_ST_HVRD;
 
 			if (qui_in.rls & QUI_IN_LMB) {
 				qm->phi = phi;
@@ -483,6 +484,7 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 				qm->s = *ms;
 				qm->ds = 1.f;
 				rstts = QUI_MAN_ACT;
+				qui_in.st |= QUI_IN_ST_CNSMD;
 			} else {
 				hvrd = stts;
 				ds = 1.f;
@@ -531,6 +533,7 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 
 			if (qui_in.rls & QUI_IN_LMB) {
 				rstts = QUI_MAN_SET;
+				qui_in.st |= QUI_IN_ST_CNSMD;
 			}
 		}
 
@@ -555,6 +558,7 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 			qm->mod = QUI_MAN_MOD_MOUSE;
 			qm->stts = QUI_MAN_STTS_NIL;
 			rstts = QUI_MAN_NIL;
+			qui_in.st |= QUI_IN_ST_CNSMD;
 		}
 	}
 
@@ -777,11 +781,16 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 
 	if (qui_in.rls & QUI_IN_RET) {
 		rstts = QUI_MAN_SET;
+		qui_in.st |= QUI_IN_ST_CNSMD;
+	}
+
+	if (rstts == QUI_MAN_ACT) {
+		qui_in.st |= QUI_IN_ST_HVRD;
 	}
 
 	if (rstts == QUI_MAN_SET) {
-			qm->stts = QUI_MAN_STTS_NIL;
-			qm->mod = QUI_MAN_MOD_MOUSE;
+		qm->stts = QUI_MAN_STTS_NIL;
+		qm->mod = QUI_MAN_MOD_MOUSE;
 	}
 
 	return rstts;
