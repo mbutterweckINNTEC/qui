@@ -1,10 +1,20 @@
 #ifndef QUI_AIM_H
 #define QUI_AIM_H
 
-int qui_aim(float3_t *p, float3_t *n, float3_t *s, float3_t *t);
+int qui_aim(float3_t *p, float3_t *n, float3_t *s, float3_t *t, int flgs);
 
 extern float qui_aim_R;
 extern float qui_aim_lnwdth;
+
+enum {
+	QUI_AIM_NIL,
+	QUI_AIM_SET,
+	QUI_AIM_MOV
+};
+
+enum {
+	QUI_AIM_FLGS_DRW_ONL = 0x1
+};
 
 /* PRIV */
 
@@ -14,6 +24,11 @@ int qui_aim_rm();
 #ifdef QUI_IMPL
 
 int qui_aim_vbo, qui_aim_vao;
+int qui_aim_st;
+
+enum {
+	QUI_AIM_ST_MOV = 0x1,
+};
 
 float qui_aim_R = 0.03125f;
 float qui_aim_lnwdth = 1;
@@ -122,7 +137,7 @@ int qui_aim_rm() {
 	return 0;
 }
 
-int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
+int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n, int flgs) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
 	float44_t V = qui_mtrx_top(QUI_MTRX_V);
 	float44_t M = {
@@ -164,6 +179,9 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
 	glDisable(GL_DEPTH_TEST);
 	glLineWidth(1);
 
+	if (flgs & QUI_AIM_FLGS_DRW_ONL)
+		return QUI_AIM_NIL;
+
 	if (qui_in.prss & QUI_IN_RALT) {
 		if (qui_in.rls & QUI_IN_LMB) {
 			int k, typ = 0;
@@ -175,6 +193,8 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
 
 			k = qui_qr_find(QUI_QR_FND_BST, &typ);
 			if (0 <= k) {
+				qui_aim_st &=~ QUI_AIM_ST_MOV;
+
 				*p = qui_qr[typ][k + qui_qr_s[typ] - 1];
 				switch (typ) {
 				case QUI_QR_TYP_PNTS:
@@ -193,19 +213,24 @@ int qui_aim(float3_t *p, float3_t *s, float3_t *t, float3_t *n) {
 					*t = normal_float3(cross_float3(*n, *s));
 					break;
 				default:
-					return 0;
+					return QUI_AIM_NIL;
 				};
-				return 1;
+				return QUI_AIM_SET;
 			}
 		}
 
 		if (qui_in.s) {
 			*p = add_float3(*p, scale_float3(*n, qui_in.s / fVM * 0.03125));
-			return 1;
+			if (qui_aim_st & QUI_AIM_ST_MOV)
+				return QUI_AIM_MOV;
+			qui_aim_st |= QUI_AIM_ST_MOV;
+			return QUI_AIM_SET;
 		}
+	} else {
+		qui_aim_st &=~ QUI_AIM_ST_MOV;
 	}
 
-	return 0;
+	return QUI_AIM_NIL;
 }
 
 #endif /* QUI_IMPL */
