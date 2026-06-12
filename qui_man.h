@@ -359,6 +359,7 @@ int qui_man_drw(float44_t P, float44_t V, float44_t W, int op[], int flgs) {
 int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, float *ms) {
 	float44_t P = qui_mtrx_top(QUI_MTRX_P);
 	float44_t V = qui_mtrx_top(QUI_MTRX_V);
+	float44_t V_;
 
 	int rstts = qm->stts ? QUI_MAN_ACT :QUI_MAN_NIL;
 
@@ -574,13 +575,25 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 
 	switch(qm->stts) {
 	case QUI_MAN_STTS_MOV_X:
-		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
+		V_ = mul_float44(mul_float44(
+			cotranslation_float44((float3_t){ -QUI_MAN_L_XYZ * 0.5f, 0.f, 0.f }),
+			scale_float44((float3_t){ 16.f / fV, 1.f, 1.f })), 
+			V);
+		qui_man_drw(P, V_, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_X);
 		break;
 	case QUI_MAN_STTS_MOV_Y:
-		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
+		V_ = mul_float44(mul_float44(
+			cotranslation_float44((float3_t){ 0.f, -QUI_MAN_L_XYZ * 0.5f, 0.f }),
+			scale_float44((float3_t){ 1.f, 16.f / fV, 1.f })), 
+			V);
+		qui_man_drw(P, V_, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Y);
 		break;
 	case QUI_MAN_STTS_MOV_Z:
-		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
+			V_ = mul_float44(mul_float44(
+			cotranslation_float44((float3_t){ 0.f, 0.f, -QUI_MAN_L_XYZ * 0.5f }),
+			scale_float44((float3_t){ 1.f, 1.f, 16.f / fV })), 
+			V);
+	qui_man_drw(P, V_, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, QUI_MAN_FLGS_AXIS_Z);
 		break;
 	case QUI_MAN_STTS_NIL: {
 		int shw = 0;
