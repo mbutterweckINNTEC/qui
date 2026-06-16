@@ -215,28 +215,40 @@ int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs
 	return QUI_VAL_RET_NIL;
 }
 
-void qui_val_f2a(char *dst, float f) {
-	int p, l;
-	union {
-		float f;
-		unsigned b;
-	} u;
+char *qui_val_hot_nm;
+char *qui_val_hot_unt;
+int qui_val_hot_prc;
 
-	u.f = f;
-	p = u.b & 3u;
-	u.b &=~ 3u;
+int qui_val_is_hot(char *nm, char *unt) {
+	int r = 0;
+	if (nm && !qui_val_hot_nm || !nm && qui_val_hot_nm)
+		r = -1;
+	if (unt && !qui_val_hot_unt || !unt && qui_val_hot_unt)
+		r = -1;
+	if (nm && qui_val_hot_nm)
+		r |= strcmp(nm, qui_val_hot_nm);
+	if (unt && qui_val_hot_unt)
+		r |= strcmp(unt, qui_val_hot_unt);
+	return !r;
+}
 
-	l = sprintf(dst, "%.3f", u.f);
+void qui_val_f2a(char *dst, float f, char *nm, char *unt) {
+	int p = 0, l;
 
-	if (10.f <= fabs(u.f)) {
+	if (qui_val_is_hot(nm, unt))
+		p = qui_val_hot_prc;
+
+	l = sprintf(dst, "%.3f", f);
+
+	if (10.f <= fabs(f)) {
 		dst[l-1] = '0';
 		p = p < 3 ? p : 2;
 	}
-	if (100.f <= fabs(u.f)) {
+	if (100.f <= fabs(f)) {
 		dst[l-2] = '0';
 		p = p < 2 ? p : 1;
 	}
-	if (1000.f <= fabs(u.f)) {
+	if (1000.f <= fabs(f)) {
 		dst[l-3] = '0';
 		p = 0;
 	}
@@ -263,7 +275,7 @@ void qui_val_f2a(char *dst, float f) {
 int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int flgs) {
 	char sval[64];
 
-	qui_val_f2a(sval, *val);
+	qui_val_f2a(sval, *val, nm, unt);
 	qui_val_drw(M, bg_, nm, unt, sval);
 
 	if (flgs & QUI_VAL_FLGS_CNST)
@@ -275,13 +287,8 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 	qui_tip_sgnl |= QUI_TIP_SGNL_FCS & qui_tip_msk;
 
 	if (qui_in.rls & QUI_IN_RET) {
-		union {
-			float f;
-			unsigned b;
-		} u;
-		u.f = *val;
-		u.b &=~ 3;
-		*val = u.f;
+		qui_val_hot_nm = 0;
+		qui_val_hot_unt = 0;
 
 		qui_in.st |= QUI_IN_ST_CNSMD;
 
@@ -298,15 +305,8 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 				*val = 0;
 				return 1;
 			}
+			*val = atof(sval);
 
-			union {
-				float f;
-				unsigned b;
-			} u;
-
-			sscanf(sval, "%f", &u.f);
-
-			u.b &=~ 3;
 			int prc = 0;
 			char *a = strchr(sval, '.');
 			if (a) {
@@ -318,16 +318,18 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 					}
 				}
 			}
-			u.b |= prc;
+			qui_val_hot_nm = nm;
+			qui_val_hot_unt = unt;
+			qui_val_hot_prc = prc;
 
-			*val = u.f;
+
 			qui_in.st |= QUI_IN_ST_CNSMD;
 			return QUI_VAL_RET_ED;
 		}
 	}
 
 	if (qui_in.rls & (QUI_IN_NUM | QUI_IN_DOT)) {
-		if (flgs & QUI_VAL_FLGS_RST || *val ==  0) {
+		if (flgs & QUI_VAL_FLGS_RST || *val ==  0 && !qui_val_is_hot(nm, unt)) {
 			memset(sval, 0, 64);
 		}
 		int sl = strlen(sval);
@@ -352,15 +354,8 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 		};
 
 		sval[sl] = '\0';
+		*val = atof(sval);
 
-		union {
-			float f;
-			unsigned b;
-		} u;
-
-		sscanf(sval, "%f", &u.f);
-
-		u.b &=~ 3;
 		int prc = 0;
 		char *a = strchr(sval, '.');
 		if (a) {
@@ -372,9 +367,9 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 				}
 			}
 		}
-		u.b |= prc;
-
-		*val = u.f;
+		qui_val_hot_nm = nm;
+		qui_val_hot_unt = unt;
+		qui_val_hot_prc = prc;
 
 		qui_in.st |= QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
@@ -382,6 +377,8 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 
 	if (qui_in.rls & QUI_IN_MINUS) {
 		*val *= -1;
+		qui_val_hot_nm = nm;
+		qui_val_hot_unt = unt;
 		qui_in.st |= QUI_IN_ST_CNSMD;
 		return QUI_VAL_RET_ED;
 	}
