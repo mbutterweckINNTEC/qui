@@ -361,7 +361,6 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 	float44_t V = qui_mtrx_top(QUI_MTRX_V);
 	float44_t V_;
 
-	float fV = frobenius_float33(float33_float44(V)) / sqrt(3);
 	float fO = frobenius_float33(float33_float44(O)) / sqrt(3);
 
 	int rstts = qm->stts ? QUI_MAN_ACT :QUI_MAN_NIL;
@@ -380,6 +379,7 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 	V = mul_float44(T, V);
 	V = mul_float44(O, V);
 
+	float fV = frobenius_float33(float33_float44(V)) / sqrt(3);
 	float44_t PV = mul_float44(V, P);
 	float detPV = det_float44(PV);
 	float44_t iPV = invert_float44(PV, detPV);
@@ -627,7 +627,7 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 	case QUI_MAN_STTS_ROT_V:
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_bld, QUI_MAN_OP_END}, QUI_MAN_FLGS_CRCL_V);
 		break;
-		case QUI_MAN_STTS_SCL:
+	case QUI_MAN_STTS_SCL:
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_bld, QUI_MAN_OP_END}, QUI_MAN_FLGS_FRM);
 		break;
 	};
