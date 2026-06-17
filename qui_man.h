@@ -26,6 +26,7 @@ enum {
 	QUI_MAN_ENBL_MOV = 0x1,
 	QUI_MAN_ENBL_ROT = 0x2,
 	QUI_MAN_ENBL_SCL = 0x4,
+	QUI_MAN_ENBL_ZLCK = 0x8,
 };
 
 extern int qui_man_enbld;
@@ -466,11 +467,13 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 				stts = QUI_MAN_STTS_MOV_Y;
 			}
 
-			nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
-			if (nl < l) {
-				l = nl;
-				qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
-				stts = QUI_MAN_STTS_MOV_Z;
+			if (0 == (qui_man_enbld & QUI_MAN_ENBL_ZLCK)) {
+				nl = qui_ray_seg_dst(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ });
+				if (nl < l) {
+					l = nl;
+					qm->t0 = qui_ray_ln_near(p, d, (float3_t){ 0.f, 0.f, 0.f }, (float3_t){ 0.f, 0.f, QUI_MAN_L_XYZ }).z;
+					stts = QUI_MAN_STTS_MOV_Z;
+				}
 			}
 		}
 
@@ -580,7 +583,12 @@ int qui_man(struct qui_man *qm, float44_t O, float3_t *mt, quaternion_t *mq, flo
 		break;
 	case QUI_MAN_STTS_NIL: {
 		int shw = 0;
-		if (qui_man_enbld & QUI_MAN_ENBL_MOV) shw |= QUI_MAN_FLGS_AXIS_XYZV;
+		if (qui_man_enbld & QUI_MAN_ENBL_MOV) {
+			shw |= QUI_MAN_FLGS_AXIS_XYZV;
+
+			if (qui_man_enbld & QUI_MAN_ENBL_ZLCK)
+				shw ^= QUI_MAN_FLGS_AXIS_Z;
+		}
 		if (qui_man_enbld & QUI_MAN_ENBL_ROT) shw |= QUI_MAN_FLGS_CRCL_XYZV;
 		if (qui_man_enbld & QUI_MAN_ENBL_SCL) shw |= QUI_MAN_FLGS_FRM;
 		qui_man_drw(P, V, W, (int[]){QUI_MAN_OP_LN_WDTH, qui_man_lnwdth_reg, QUI_MAN_OP_END}, shw);
