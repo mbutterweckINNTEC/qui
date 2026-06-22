@@ -30,6 +30,7 @@ int qui_rm();
 #include "qui_msr.h"
 #include "qui_man.h"
 #include "qui_aim.h"
+#include "qui_sel.h"
 
 #ifdef QUI_IMPL
 
