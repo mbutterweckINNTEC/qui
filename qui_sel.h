@@ -8,47 +8,50 @@ enum {
 
 int qui_sel(char *it[], int n, int *i, float44_t M, float3_t bg);
 
+#define QUI_SEL_W 4	/* default value */
+
+/* width of the widget, for best use integer values */
+extern float qui_sel_w;
+
 /* Implementation */
 #ifdef QUI_IMPL
 
 static float const qui_sel_scl = 0.03125;
-
-#define QUI_SEL_W 4
-
-static float3_t qui_sel_ngon[] = {
-	{ -1.f, 0.f, 0.f },
-	{-0.5f, 0.8660254038f, 0.f },
-	{ QUI_SEL_W, 0.8660254038f, 0.f },
-	{ 0.5f + QUI_SEL_W, 0.f, 0.f },
-	{ QUI_SEL_W,-0.8660254038f, 0.f },
-	{-0.5f,-0.8660254038f, 0.f }
-};
-
-static float3_t qui_sel_larrw_ngon[] = {
-	{ -1.f, 0.f, 0.f },
-	{-0.5f, 0.8660254038f, 0.f },
-	{ 0.f, 0.8660254038f, 0.f },
-	{-0.5f, 0.f, 0.f },
-	{ 0.f,-0.8660254038f, 0.f },
-	{-0.5f,-0.8660254038f, 0.f }
-};
-
-static float3_t qui_sel_rarrw_ngon[] = {
-	{-0.5f + QUI_SEL_W, 0.8660254038f, 0.f },
-	{ QUI_SEL_W, 0.8660254038f, 0.f },
-	{ 0.5f + QUI_SEL_W, 0.f, 0.f },
-	{ QUI_SEL_W,-0.8660254038f, 0.f },
-	{-0.5f + QUI_SEL_W,-0.8660254038f, 0.f },
-	{ QUI_SEL_W, 0.f, 0.f }
-};
+float qui_sel_w = QUI_SEL_W;
 
 void qui_sel_drw(char *it, float44_t M_, float4_t bg, float4_t lbc, float4_t rbc, float4_t tc) {
 	char txt[32] = "";
 	int len;
 
+	float3_t qui_sel_ngon[] = {
+		{ -1.f, 0.f, 0.f },
+		{-0.5f, 0.8660254038f, 0.f },
+		{ qui_sel_w, 0.8660254038f, 0.f },
+		{ 0.5f + qui_sel_w, 0.f, 0.f },
+		{ qui_sel_w,-0.8660254038f, 0.f },
+		{-0.5f,-0.8660254038f, 0.f }
+	};
+
+	float3_t qui_sel_larrw_ngon[] = {
+		{ -1.f, 0.f, 0.f },
+		{-0.5f, 0.8660254038f, 0.f },
+		{ 0.f, 0.8660254038f, 0.f },
+		{-0.5f, 0.f, 0.f },
+		{ 0.f,-0.8660254038f, 0.f },
+		{-0.5f,-0.8660254038f, 0.f }
+	};
+
+	float3_t qui_sel_rarrw_ngon[] = {
+		{-0.5f + qui_sel_w, 0.8660254038f, 0.f },
+		{ qui_sel_w, 0.8660254038f, 0.f },
+		{ 0.5f + qui_sel_w, 0.f, 0.f },
+		{ qui_sel_w,-0.8660254038f, 0.f },
+		{-0.5f + qui_sel_w,-0.8660254038f, 0.f },
+		{ qui_sel_w, 0.f, 0.f }
+	};
+
 	strncpy(txt, it, 31);
 	len = strlen(txt);
-
 
 	float44_t S = {
 		qui_sel_scl, 0, 0, 0,
@@ -66,7 +69,7 @@ void qui_sel_drw(char *it, float44_t M_, float4_t bg, float4_t lbc, float4_t rbc
 		}, M
 	);
 
-	while (len && QUI_SEL_W + 1 < qui_txt_len(txt))
+	while (len && qui_sel_w + 1 < qui_txt_len(txt))
 		txt[--len] = '\0';
 
 	qui_ngon(6, qui_sel_ngon, M, bg);
@@ -103,7 +106,7 @@ int qui_sel_hvr(float44_t M_) {
 		}
 
 		r = normal_float3(m_float3(cotransform_float44(iPVM, (float4_t){ 0.f, 0.f, 1.f, 0.f })));
-		d = qui_ray_pnt_dst(p, r, (float3_t){ QUI_SEL_W - 0.5f, 0.f, 0.f });
+		d = qui_ray_pnt_dst(p, r, (float3_t){ qui_sel_w - 0.5f, 0.f, 0.f });
 
 		if (d < 0.8660254038f) {
 			qui_tip_sgnl |= QUI_TIP_SGNL_FCS;
