@@ -14,6 +14,7 @@ enum {
 
 int qui_val_i(float44_t M, float3_t bg_, char *nm, char *unt, int *val, int flgs);
 int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int flgs);
+int qui_val_g(float44_t M, float3_t bg_, char *nm, char *unt, double *val, int flgs);
 
 int qui_val_hvr(float44_t M);
 
@@ -384,6 +385,13 @@ int qui_val_f(float44_t M, float3_t bg_, char *nm, char *unt, float *val, int fl
 		return QUI_VAL_RET_ED;
 	}
 	return QUI_VAL_RET_NIL;
+}
+
+int qui_val_g(float44_t M, float3_t bg, char *nm, char *unt, double *val, int flgs) {
+	float v = *val;
+	int r = qui_val_f(M, bg, nm, unt, &v, flgs);
+	*val = v;
+	return r;
 }
 #endif /* QUI_IMPL */
 #endif /* QUI_VAL_H */
