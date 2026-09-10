@@ -26,7 +26,7 @@ static float3_t qui_bttn_ngon[] = {
 int qui_bttn(char *nm, float44_t M, float3_t clr) {
 	int ret = QUI_BTTN_NIL;
 	float4_t bg = m_float4(clr, 1.f);
-	float4_t fg = m_float4(mix_float3(clr, (float3_t){1,1,1}, 0.75), 1.f);
+	float4_t fg = clr.x + clr.y + clr.z < 2.0 ? (float4_t) { 1.f, 1.f, 1.f, 1.f } : (float4_t) { 0.f, 0.f, 0.f, 1.f } ; //m_float4(mix_float3(clr, (float3_t){1,1,1}, 0.75), 1.f);
 
 	float44_t S = {
 		qui_bttn_scl, 0, 0, 0,
